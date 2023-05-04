@@ -170,6 +170,18 @@ function sortData(data) {
   return data;
 }
 
+function filterData(data) {
+  //filter length between 10.000 and 19.999
+  for (var gene in data) {
+    for (var variant of data[gene]) {
+      if (variant.txEnd - variant.txStart < 10000 || variant.txEnd - variant.txStart > 19999) {
+        delete data[gene];
+      }
+    }
+  }
+  return data;
+}
+
 async function getGenomeFile(GENOME) {
   let data = {};
   const startTime = Date.now();
@@ -195,8 +207,12 @@ async function getGenomeFile(GENOME) {
 
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
+  data = filterData(data); // filter data by length
   return data
 }
+
+
+
 
 async function getGenomeData(genome, SERVER) {
   const startTime = Date.now();
@@ -207,7 +223,7 @@ async function getGenomeData(genome, SERVER) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ data: dataToSend }),
   });
-  console.log(await response.text()); 
+ // console.log(await response.text()); 
   
   const processedData = await response.json();
   const endTime = Date.now();
