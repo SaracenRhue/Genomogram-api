@@ -198,6 +198,26 @@ async function getGenomeFile(GENOME) {
   return data
 }
 
+async function getGenomeData(genome, SERVER) {
+  const startTime = Date.now();
+  const dataToSend = genome;
+
+  const response = await fetch(`${SERVER}/process-data`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ data: dataToSend }),
+  });
+  console.log(await response.text()); 
+  
+  const processedData = await response.json();
+  const endTime = Date.now();
+  console.log(`Time taken: ${Math.floor((endTime - startTime) / 1000)}s`);
+  return processedData;
+}
+
+
+
+
 module.exports = {
   connectToDB,
   getTableNames,
@@ -210,4 +230,5 @@ module.exports = {
   cleanData,
   sortData,
   getGenomeFile,
+  getGenomeData
 };
