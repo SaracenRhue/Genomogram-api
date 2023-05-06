@@ -28,7 +28,7 @@ app.post('/process-data', async (req, res) => {
   let processedData = {};
   if (utils.fileExists(fileName)) {
     processedData = await fs.readFile(fileName);
-    if (utils.getFileAge(fileName) < 30) {
+    if (utils.getFileAge(fileName) > 30) {
       processedData = await utils.getGenomeFile(received);
     } else {
       processedData = fs.readFile(fileName);
