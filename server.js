@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-CACHE = ['human'];
+CACHE = ['Human', 'Hedgehog'];
 CACHE.forEach((item) => {
   const data = utils.getGenomeFile(item);
   fs.writeFile(
