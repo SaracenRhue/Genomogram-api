@@ -4,7 +4,7 @@ WORKDIR /home/app
 
 COPY . .
 
-RUN npm install
+RUN mkdir cache && npm install
 
 ENV PORT=3000
 EXPOSE 3000
