@@ -4,8 +4,7 @@ WORKDIR /home/app
 
 COPY . .
 
-RUN apt add bash && \
-    mkdir cache && \
+RUN mkdir cache && \
     npm install
 
 ENV PORT=3000
