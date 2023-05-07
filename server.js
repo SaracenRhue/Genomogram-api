@@ -6,14 +6,11 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-CACHE = ['Human', 'Hedgehog'];
-CACHE.forEach((item) => {
-  const data = utils.getGenomeFile(item);
-  fs.writeFile(
-    `cache/${item.toLocaleLowerCase()}.json`,
-    JSON.stringify(data, null, 2)
-  );
-});
+// CACHE = ['Human'];
+// CACHE.forEach((item) => {
+//   let data = utils.getGenomeFile(item);
+//   fs.writeFile(`cache/${item.toLocaleLowerCase()}.json`,JSON.stringify(data, null, 2));
+// });
 
 // GET endpoint
 app.get('/', (req, res) => {
@@ -28,14 +25,20 @@ app.post('/process-data', async (req, res) => {
   let processedData = {};
   if (utils.fileExists(fileName)) {
     processedData = await fs.readFile(fileName);
+    processedData = await JSON.parse(processedData);
+    console.log('File exists');
     if (utils.getFileAge(fileName) > 30) {
       processedData = await utils.getGenomeFile(received);
+      processedData = await JSON.parse(processedData);
+      console.log('File is older than 30 days');
     } else {
-      processedData = fs.readFile(fileName);
+      processedData = await fs.readFile(fileName);
+      processedData = await JSON.parse(processedData);
+      console.log('File is younger than 30 days');
     }
   } else {
     processedData = await utils.getGenomeFile(received);
-    fs.writeFile(`cache/${item.toLocaleLowerCase()}.json`,JSON.stringify(processedData, null, 2))
+    fs.writeFile(fileName, JSON.stringify(processedData, null, 2))
   }
 
   // Send the processed data back as a response
