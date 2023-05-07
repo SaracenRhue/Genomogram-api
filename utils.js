@@ -174,20 +174,13 @@ function filterData(data) {
   //filter length between 10.000 and 19.999
   for (var gene in data) {
     for (var variant of data[gene]) {
-      if (
-        variant.txEnd - variant.txStart < 10000 ||
-        variant.txEnd - variant.txStart > 19999
-      ) {
+      if (variant.txEnd - variant.txStart < 10000 || variant.txEnd - variant.txStart > 19999) {
         delete data[gene];
       }
     }
   }
   return data;
 }
-
-
-
-
 
 async function getGenomeFile(GENOME) {
   let data = {};
@@ -214,10 +207,9 @@ async function getGenomeFile(GENOME) {
 
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
+  data = filterData(data); // filter data by length
   return data
 }
-
-
 
 
 
@@ -240,25 +232,6 @@ async function getGenomeData(genome, SERVER) {
 }
 
 
-function getFileAge(filePath) {
-  // Get the file stats
-  const stats = fs.statSync(filePath);
-
-  // Get the modification time
-  const modificationTime = stats.mtime;
-
-  // Calculate the age of the file in milliseconds
-  const ageInMillis = Date.now() - modificationTime.getTime();
-
-  // Convert the age to days and round down to an integer
-  const ageInDays = Math.floor(ageInMillis / (1000 * 60 * 60 * 24));
-
-  return ageInDays;
-}
-
-function fileExists(filePath) {
-  return fs.existsSync(filePath);
-}
 
 
 module.exports = {
@@ -273,7 +246,5 @@ module.exports = {
   cleanData,
   sortData,
   getGenomeFile,
-  getGenomeData,
-  getFileAge,
-  fileExists
+  getGenomeData
 };
