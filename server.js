@@ -6,11 +6,20 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// CACHE = ['Human'];
-// CACHE.forEach((item) => {
-//   let data = utils.getGenomeFile(item);
-//   fs.writeFile(`cache/${item.toLocaleLowerCase()}.json`,JSON.stringify(data, null, 2));
-// });
+const CACHE = ['Human'];
+
+(async () => {
+  for (const item of CACHE) {
+    try {
+      const data = await utils.getGenomeFile(item);
+      await fs.writeFile(`cache/${item.toLocaleLowerCase()}.json`,JSON.stringify(data, null, 2));
+      console.log(`Cache file for ${item} created.`);
+    } catch (error) {
+      console.error(`Error creating cache file for ${item}:`, error);
+    }
+  }
+})();
+
 
 // GET endpoint
 app.get('/', (req, res) => {
