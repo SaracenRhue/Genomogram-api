@@ -15,6 +15,7 @@ app.get('/', (req, res) => {
 // POST endpoint
 app.post('/process-data', async (req, res) => {
   console.log('Received data:', req.body.data);
+  
   let processedData;
   if (req.body.data == 'Human') {
     processedData = await Human;
