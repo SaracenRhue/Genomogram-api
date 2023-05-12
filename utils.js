@@ -144,8 +144,8 @@ function getMatrix(gene) {
 
 function cleanData(data) {
   // Remove unnecessary fields from the data
-  for (var gene in data) {
-    for (var variant of data[gene]) {
+  for (var gene of data) {
+    for (var variant of gene.variants) {
       delete variant.bin;
       delete variant.chrom;
       delete variant.strand;
@@ -161,29 +161,26 @@ function cleanData(data) {
   return data;
 }
 
+
 function sortData(data) {
-  // sort data by exonCount
-  data = Object.entries(data).sort(
-    (a, b) => a[1][0].exonCount - b[1][0].exonCount
-  );
-  data = Object.fromEntries(data);
+  // Sort data by exonCount
+  data.sort((a, b) => a.variants[0].exonCount - b.variants[0].exonCount);
   return data;
 }
 
 function filterData(data) {
-  //filter length between 10.000 and 19.999
-  for (var gene in data) {
-    for (var variant of data[gene]) {
-      if (variant.txEnd - variant.txStart < 10000 || variant.txEnd - variant.txStart > 19999) {
-        delete data[gene];
-      }
-    }
-  }
-  return data;
+  // Filter length between 10,000 and 19,999
+  let filteredData = data.filter((gene) => {
+    return gene.variants.some((variant) => {
+      let length = variant.txEnd - variant.txStart;
+      return length >= 10000 && length <= 19999;
+    });
+  });
+  return filteredData;
 }
 
+
 async function getGenomeFile(GENOME) {
-  let data = [];
   const startTime = Date.now();
   const db = (await findTablesFor(GENOME))[0]; // genome
   const connection = await connectToDB(db);
@@ -193,11 +190,18 @@ async function getGenomeFile(GENOME) {
   const formattedGenome = genome.map((gene) => formatGene(gene)); // format genome data for json
 
   // Group the genes by name2
+  let data = [];
   formattedGenome.forEach((gene) => {
-    if (!data[gene.name2]) {
-      data[gene.name2] = [];
+    const index = data.findIndex((element) => element.name === gene.name2);
+    if (index !== -1) {
+      data[index].variants.push(gene);
+    } else {
+      data.push({
+        name: gene.name2,
+        variants: [gene],
+        matrix: [],
+      });
     }
-    data[gene.name2].push(gene);
   });
 
   // Close the database connections
@@ -209,21 +213,9 @@ async function getGenomeFile(GENOME) {
   data = sortData(data); // sort data by exon count
   data = filterData(data); // filter data by length
 
-  // convert data to array
-let newData = [];
-let dataKeys = Object.keys(data);
-
-for (let key of dataKeys) {
-  data[key] = {
-    name: key,
-    variants: data[key],
-    matrix: [],
-  };
-  newData.push(data[key]);
+  return data;
 }
 
-  return newData
-}
 
 
 
