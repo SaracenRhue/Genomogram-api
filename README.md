@@ -3,35 +3,39 @@
 ```js
 const fs = require('fs/promises');
 
-async function getData(genome) {
+const SERVER = 'http://genomogram.richard-kammermeier.ch';
+// const SERVER = 'http://tower:2023';
+// const SERVER = 'http://localhost:3000';
+const GENOME = 'Human';
+PATH = './';
+
+async function getGenomeData(genome, SERVER) {
+  const startTime = Date.now();
   const dataToSend = genome;
 
-  const response = await fetch('http://localhost:3000/process-data', {
+  const response = await fetch(`${SERVER}/process-data`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ data: dataToSend }),
   });
-
+  // console.log(await response.text());
   const processedData = await response.json();
+  const endTime = Date.now();
+  console.log(`Time taken: ${Math.floor((endTime - startTime) / 1000)}s`);
   return processedData;
 }
 
-const GENOME = 'Human'
-getData(GENOME)
+
+getGenomeData(GENOME, SERVER)
   .then((response) => {
-    console.log('Received data:', response);
-
     const data = response.data;
-
     if (data) {
-      // Write the value of the 'data' key to a JSON file
-      fs.writeFile(`data/${GENOME.toLocaleLowerCase()}.json`, JSON.stringify(data, null, 2))
+      fs.writeFile(
+        `${PATH}${GENOME.toLocaleLowerCase()}.json`,
+        JSON.stringify(data, null, 2)
+      )
         .then(() => {
-          console.log(
-            `Data written to data/${GENOME.toLocaleLowerCase()}.json`
-          );
+          console.log(`Data written to ${GENOME.toLocaleLowerCase()}.json`);
         })
         .catch((error) => {
           console.error('Error writing data to file:', error);
@@ -43,5 +47,4 @@ getData(GENOME)
   .catch((error) => {
     console.error('Error getting genome data:', error);
   });
-
 ```

@@ -183,7 +183,7 @@ function filterData(data) {
 }
 
 async function getGenomeFile(GENOME) {
-  let data = {};
+  let data = [];
   const startTime = Date.now();
   const db = (await findTablesFor(GENOME))[0]; // genome
   const connection = await connectToDB(db);
@@ -208,27 +208,21 @@ async function getGenomeFile(GENOME) {
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
   data = filterData(data); // filter data by length
-  return data
+
+  // convert data to array
+let newData = [];
+let dataKeys = Object.keys(data);
+
+for (let key of dataKeys) {
+  data[key] = {
+    name: key,
+    variants: data[key],
+    matrix: [],
+  };
+  newData.push(data[key]);
 }
 
-
-
-
-async function getGenomeData(genome, SERVER) {
-  const startTime = Date.now();
-  const dataToSend = genome;
-
-  const response = await fetch(`${SERVER}/process-data`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ data: dataToSend }),
-  });
- // console.log(await response.text()); 
-  
-  const processedData = await response.json();
-  const endTime = Date.now();
-  console.log(`Time taken: ${Math.floor((endTime - startTime) / 1000)}s`);
-  return processedData;
+  return newData
 }
 
 
@@ -245,6 +239,5 @@ module.exports = {
   getMatrix,
   cleanData,
   sortData,
-  getGenomeFile,
-  getGenomeData
+  getGenomeFile
 };
