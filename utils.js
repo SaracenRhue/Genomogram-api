@@ -188,8 +188,7 @@ async function getGenomeFile(GENOME) {
     } else {
       data.push({
         name: gene.name2,
-        variants: [gene],
-        matrix: [],
+        variants: [gene]
       });
     }
   });
