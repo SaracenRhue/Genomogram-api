@@ -15,9 +15,14 @@ app.get('/', (req, res) => {
 // POST endpoint
 app.post('/process-data', async (req, res) => {
   console.log('Received data:', req.body.data);
-  
+
   let processedData;
-  if (req.body.data == 'Human') {
+  // check is data is array
+  if (typeof req.body.data == 'object') {
+    processedData = utils.createMatrix(req.body.data);
+  }
+  // check if data is Human
+  else if (req.body.data == 'Human') {
     processedData = await Human;
   } else {
     processedData = await utils.getGenomeFile(req.body.data);

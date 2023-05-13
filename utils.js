@@ -103,44 +103,34 @@ function formatGene(gene) {
   return gene;
 }
 
-function getArray(variant) {
-  // Convert a variant from starts and lengths to binary list
-  const variantStart = variant.txStart;
-  const variantEnd = variant.txEnd;
-  let exonStarts = variant.exonStarts;
-  let exonEnds = variant.exonEnds;
+function createMatrix(variants) {
+  // Determine the length of the longest variant
+  let longestVariantLength = Math.max(
+    ...variants.map((variant) => variant.txEnd - variant.txStart)
+  );
 
-  if (typeof exonStarts === 'number') {
-    exonStarts = [exonStarts];
-  }
+  // Determine the earliest start point of all variants
+  let earliestStart = Math.min(...variants.map((variant) => variant.txStart));
 
-  if (typeof exonEnds === 'number') {
-    exonEnds = [exonEnds];
-  }
+  // Create matrix
+  let matrix = variants.map((variant) => {
+    // Initialize an array filled with zeros
+    let variantArray = Array(longestVariantLength + earliestStart).fill(0);
 
-  const exonLengths = exonEnds.map((end, i) => end - exonStarts[i]);
+    for (let i = 0; i < variant.exonStarts.length; i++) {
+      // Offset the start and end points by the earliest start point
+      let exonStart = variant.exonStarts[i] - earliestStart;
+      let exonEnd = variant.exonEnds[i] - earliestStart;
 
-  const variantLength = variantEnd - variantStart;
-  const variantArray = Array(variantLength).fill(0);
-
-  exonStarts.forEach((exonStart, index) => {
-    const exonLength = exonLengths[index];
-
-    for (let i = exonStart; i < exonStart + exonLength; i++) {
-      if (variantStart <= i && i < variantEnd) {
-        variantArray[i - variantStart] = 1;
+      for (let j = exonStart; j < exonEnd; j++) {
+        variantArray[j] = 1;
       }
     }
+    return variantArray;
   });
-
-  return variantArray;
+  return matrix;
 }
 
-function getMatrix(gene) {
-  // Get a matrix of variants for a gene
-  const geneMatrix = gene.map((variant) => getArray(variant));
-  return geneMatrix;
-}
 
 function cleanData(data) {
   // Remove unnecessary fields from the data
@@ -212,7 +202,6 @@ async function getGenomeFile(GENOME) {
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
   data = filterData(data); // filter data by length
-
   return data;
 }
 
@@ -227,8 +216,7 @@ module.exports = {
   getTable,
   findTablesFor,
   formatGene,
-  getArray,
-  getMatrix,
+  createMatrix,
   cleanData,
   sortData,
   getGenomeFile
