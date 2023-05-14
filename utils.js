@@ -104,33 +104,37 @@ function formatGene(gene) {
 }
 
 function createMatrix(variants) {
-  // Determine the length of the longest variant
-  let longestVariantLength = Math.max(
-    ...variants.map((variant) => variant.txEnd - variant.txStart)
-  );
-
-  // Determine the earliest start point of all variants
+  // Determine the earliest start and the latest end among the variants
   let earliestStart = Math.min(...variants.map((variant) => variant.txStart));
+  let latestEnd = Math.max(...variants.map((variant) => variant.txEnd));
 
-  // Create matrix
+  // Determine the length of the matrix
+  let matrixLength = latestEnd - earliestStart;
+
+  // Create the matrix
   let matrix = variants.map((variant) => {
     // Initialize an array filled with zeros
-    let variantArray = Array(longestVariantLength + earliestStart).fill(0);
+    let variantArray = Array(matrixLength).fill(0);
 
     for (let i = 0; i < variant.exonStarts.length; i++) {
-      // Offset the start and end points by the earliest start point
+      // Adjust the start and end points by the earliest start point
       let exonStart = variant.exonStarts[i] - earliestStart;
       let exonEnd = variant.exonEnds[i] - earliestStart;
 
-      for (let j = exonStart; j < exonEnd; j++) {
-        variantArray[j] = 1;
-      }
+      // Fill the corresponding region with ones
+      variantArray.fill(1, exonStart, exonEnd);
     }
+
+    // Adjust the array length by adding leading and trailing zeros
+    let leadingZeros = Array(variant.txStart - earliestStart).fill(0);
+    let trailingZeros = Array(latestEnd - variant.txEnd).fill(0);
+    variantArray = leadingZeros.concat(variantArray).concat(trailingZeros);
+
     return variantArray;
   });
+
   return matrix;
 }
-
 
 function cleanData(data) {
   // Remove unnecessary fields from the data
@@ -151,7 +155,6 @@ function cleanData(data) {
   return data;
 }
 
-
 function sortData(data) {
   // Sort data by exonCount
   data.sort((a, b) => a.variants[0].exonCount - b.variants[0].exonCount);
@@ -159,9 +162,9 @@ function sortData(data) {
 }
 
 function filterData(data) {
-  // Filter length between 10,000 and 19,999
+  // Filter genes so that all variants have a length between 10,000 and 19,999
   let filteredData = data.filter((gene) => {
-    return gene.variants.some((variant) => {
+    return gene.variants.every((variant) => {
       let length = variant.txEnd - variant.txStart;
       return length >= 10000 && length <= 19999;
     });
@@ -188,7 +191,7 @@ async function getGenomeFile(GENOME) {
     } else {
       data.push({
         name: gene.name2,
-        variants: [gene]
+        variants: [gene],
       });
     }
   });
@@ -201,12 +204,11 @@ async function getGenomeFile(GENOME) {
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
   data = filterData(data); // filter data by length
+  // data.forEach((gene) => {
+  //   gene.matrix = createMatrix(gene.variants);
+  // });
   return data;
-}
-
-
-
-
+} 
 
 module.exports = {
   connectToDB,
@@ -218,5 +220,5 @@ module.exports = {
   createMatrix,
   cleanData,
   sortData,
-  getGenomeFile
+  getGenomeFile,
 };
