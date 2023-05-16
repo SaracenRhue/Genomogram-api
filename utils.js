@@ -103,49 +103,43 @@ function formatGene(gene) {
   return gene;
 }
 
-function getArray(variant) {
-  // Convert a variant from starts and lengths to binary list
-  const variantStart = variant.txStart;
-  const variantEnd = variant.txEnd;
-  let exonStarts = variant.exonStarts;
-  let exonEnds = variant.exonEnds;
+function createMatrix(variants) {
+  // Determine the earliest start and the latest end among the variants
+  let earliestStart = Math.min(...variants.map((variant) => variant.txStart));
+  let latestEnd = Math.max(...variants.map((variant) => variant.txEnd));
 
-  if (typeof exonStarts === 'number') {
-    exonStarts = [exonStarts];
-  }
+  // Determine the length of the matrix
+  let matrixLength = latestEnd - earliestStart;
 
-  if (typeof exonEnds === 'number') {
-    exonEnds = [exonEnds];
-  }
+  // Create the matrix
+  let matrix = variants.map((variant) => {
+    // Initialize an array filled with zeros
+    let variantArray = Array(matrixLength).fill(0);
 
-  const exonLengths = exonEnds.map((end, i) => end - exonStarts[i]);
+    for (let i = 0; i < variant.exonStarts.length; i++) {
+      // Adjust the start and end points by the earliest start point
+      let exonStart = variant.exonStarts[i] - earliestStart;
+      let exonEnd = variant.exonEnds[i] - earliestStart;
 
-  const variantLength = variantEnd - variantStart;
-  const variantArray = Array(variantLength).fill(0);
-
-  exonStarts.forEach((exonStart, index) => {
-    const exonLength = exonLengths[index];
-
-    for (let i = exonStart; i < exonStart + exonLength; i++) {
-      if (variantStart <= i && i < variantEnd) {
-        variantArray[i - variantStart] = 1;
-      }
+      // Fill the corresponding region with ones
+      variantArray.fill(1, exonStart, exonEnd);
     }
+
+    // Adjust the array length by adding leading and trailing zeros
+    let leadingZeros = Array(variant.txStart - earliestStart).fill(0);
+    let trailingZeros = Array(latestEnd - variant.txEnd).fill(0);
+    variantArray = leadingZeros.concat(variantArray).concat(trailingZeros);
+
+    return variantArray;
   });
 
-  return variantArray;
-}
-
-function getMatrix(gene) {
-  // Get a matrix of variants for a gene
-  const geneMatrix = gene.map((variant) => getArray(variant));
-  return geneMatrix;
+  return matrix;
 }
 
 function cleanData(data) {
   // Remove unnecessary fields from the data
-  for (var gene in data) {
-    for (var variant of data[gene]) {
+  for (var gene of data) {
+    for (var variant of gene.variants) {
       delete variant.bin;
       delete variant.chrom;
       delete variant.strand;
@@ -162,35 +156,23 @@ function cleanData(data) {
 }
 
 function sortData(data) {
-  // sort data by exonCount
-  data = Object.entries(data).sort(
-    (a, b) => a[1][0].exonCount - b[1][0].exonCount
-  );
-  data = Object.fromEntries(data);
+  // Sort data by exonCount
+  data.sort((a, b) => a.variants[0].exonCount - b.variants[0].exonCount);
   return data;
 }
 
 function filterData(data) {
-  //filter length between 10.000 and 19.999
-  for (var gene in data) {
-    for (var variant of data[gene]) {
-      if (
-        variant.txEnd - variant.txStart < 10000 ||
-        variant.txEnd - variant.txStart > 19999
-      ) {
-        delete data[gene];
-      }
-    }
-  }
-  return data;
+  // Filter genes so that all variants have a length between 10,000 and 19,999
+  let filteredData = data.filter((gene) => {
+    return gene.variants.every((variant) => {
+      let length = variant.txEnd - variant.txStart;
+      return length >= 10000 && length <= 19999;
+    });
+  });
+  return filteredData;
 }
 
-
-
-
-
 async function getGenomeFile(GENOME) {
-  let data = {};
   const startTime = Date.now();
   const db = (await findTablesFor(GENOME))[0]; // genome
   const connection = await connectToDB(db);
@@ -200,11 +182,17 @@ async function getGenomeFile(GENOME) {
   const formattedGenome = genome.map((gene) => formatGene(gene)); // format genome data for json
 
   // Group the genes by name2
+  let data = [];
   formattedGenome.forEach((gene) => {
-    if (!data[gene.name2]) {
-      data[gene.name2] = [];
+    const index = data.findIndex((element) => element.name === gene.name2);
+    if (index !== -1) {
+      data[index].variants.push(gene);
+    } else {
+      data.push({
+        name: gene.name2,
+        variants: [gene],
+      });
     }
-    data[gene.name2].push(gene);
   });
 
   // Close the database connections
@@ -214,30 +202,12 @@ async function getGenomeFile(GENOME) {
 
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
-  return data
-}
-
-
-
-
-
-
-async function getGenomeData(genome, SERVER) {
-  const startTime = Date.now();
-  const dataToSend = genome;
-
-  const response = await fetch(`${SERVER}/process-data`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ data: dataToSend }),
-  });
- // console.log(await response.text()); 
-  
-  const processedData = await response.json();
-  const endTime = Date.now();
-  console.log(`Time taken: ${Math.floor((endTime - startTime) / 1000)}s`);
-  return processedData;
-}
+  data = filterData(data); // filter data by length
+  // data.forEach((gene) => {
+  //   gene.matrix = createMatrix(gene.variants);
+  // });
+  return data;
+} 
 
 
 function getFileAge(filePath) {
@@ -268,12 +238,10 @@ module.exports = {
   getTable,
   findTablesFor,
   formatGene,
-  getArray,
-  getMatrix,
+  createMatrix,
   cleanData,
   sortData,
   getGenomeFile,
-  getGenomeData,
   getFileAge,
   fileExists
 };
