@@ -1,10 +1,10 @@
 const fs = require('fs/promises');
 
-// const SERVER = 'http://genomogram.richard-kammermeier.ch';
+const SERVER = 'https://genomogram.richard-kammermeier.ch';
 // const SERVER = 'http://tower:2023';
-const SERVER = 'http://localhost:3000';
+//const SERVER = 'http://localhost:3000';
 const GENOME = 'Human';
-PATH = './';
+const PATH = './';
 
 async function getData(genome, SERVER) {
   const startTime = Date.now();
