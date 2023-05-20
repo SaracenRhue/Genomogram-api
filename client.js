@@ -1,8 +1,7 @@
 const fs = require('fs/promises');
 
-const SERVER = 'https://genomogram.richard-kammermeier.ch';
-// const SERVER = 'http://tower:2023';
-//const SERVER = 'http://localhost:3000';
+
+const SERVER = 'http://localhost:3000';
 const GENOME = 'Human';
 const PATH = './';
 
@@ -27,7 +26,7 @@ getData(GENOME, SERVER)
   .then((response) => {
     const data = response.data;
     if (data) {
-      return fs.writeFile(`${PATH}${GENOME.toLowerCase()}.json`,JSON.stringify(data, null, 2));
+      return fs.writeFile(`${PATH}${GENOME.toLowerCase()}.json`,JSON.stringify(data, null));
     } else {
       throw new Error('No data received from the server');
     }

@@ -5,8 +5,6 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-const Human = utils.getGenomeFile('Human');
-
 // GET endpoint
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -20,10 +18,6 @@ app.post('/process-data', async (req, res) => {
   // check is data is array
   if (typeof req.body.data == 'object') {
     processedData = utils.createMatrix(req.body.data);
-  }
-  // check if data is Human
-  else if (req.body.data == 'Human') {
-    processedData = await Human;
   } else {
     processedData = await utils.getGenomeFile(req.body.data);
   }

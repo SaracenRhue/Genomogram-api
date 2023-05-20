@@ -9,6 +9,7 @@ function connectToDB(db = 'hgcentral') {
     user: 'genome',
     database: db,
   });
+console.log(`Connected to database ${db}`);
 
   return connection;
 }
@@ -43,16 +44,25 @@ function toJSON(table, connection) {
 }
 
 function getTable(table, connection) {
-  // Get the data from a table
-  const sql = `SELECT * FROM ${table}`;
+  // Get the data from a table ordered by 'name2'
+  console.log(`Getting data from ${table}`);
+  let sql = `SELECT name, name2, txStart, txEnd, exonCount, exonStarts exonEnds FROM ${table} WHERE txEnd-txStart>10000 AND txEnd-txStart<19999 ORDER BY name2`;
+  if (table === 'dbDb') {
+    sql = `SELECT * FROM ${table}`;
+  }
+  
   return new Promise((resolve, reject) => {
     connection.query(sql, (error, results) => {
-      if (error) reject(error);
-      const data = results.map((result) => Object.assign({}, result));
-      resolve(data);
+      if (error) {
+        reject(error);
+      } else {
+        const data = results.map((result) => Object.assign({}, result));
+        resolve(data);
+      }
     });
   });
 }
+
 
 function findTablesFor(organism) {
   // Find a table for a specific genome e.g. "Human" in the current database
@@ -140,19 +150,15 @@ function cleanData(data) {
   // Remove unnecessary fields from the data
   for (var gene of data) {
     for (var variant of gene.variants) {
-      delete variant.bin;
-      delete variant.chrom;
-      delete variant.strand;
-      delete variant.cdsStart;
-      delete variant.cdsEnd;
-      delete variant.score;
-      delete variant.name2;
-      delete variant.cdsStartStat;
-      delete variant.cdsEndStat;
-      delete variant.exonFrames;
+      if (typeof variant.exonStarts === 'number') {
+        variant.exonStarts = [variant.exonStarts];
+      }
+      if (typeof variant.exonEnds === 'number') {
+        variant.exonEnds = [variant.exonEnds];
+      }
+      return data;
     }
   }
-  return data;
 }
 
 function sortData(data) {
@@ -171,7 +177,6 @@ function filterData(data) {
   });
   return filteredData;
 }
-
 
 async function getGenomeFile(GENOME) {
   const startTime = Date.now();
@@ -202,13 +207,13 @@ async function getGenomeFile(GENOME) {
   console.log(`Time taken: ${Math.floor((endTime - startTime) / 1000)}s`);
 
   data = cleanData(data); // remove unneeded data
-  data = sortData(data); // sort data by exon count
-  data = filterData(data); // filter data by length
+  // data = sortData(data); // sort data by exon count
+  // data = filterData(data); // filter data by length
   // data.forEach((gene) => {
   //   gene.matrix = createMatrix(gene.variants);
   // });
   return data;
-} 
+}
 
 module.exports = {
   connectToDB,
