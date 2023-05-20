@@ -46,7 +46,7 @@ function toJSON(table, connection) {
 function getTable(table, connection) {
   // Get the data from a table ordered by 'name2'
   console.log(`Getting data from ${table}`);
-  let sql = `SELECT name, name2, txStart, txEnd, exonCount, exonStarts exonEnds FROM ${table} WHERE txEnd-txStart>10000 AND txEnd-txStart<19999 ORDER BY name2`;
+  let sql = `SELECT name, name2, txStart, txEnd, exonCount, exonStarts exonEnds FROM ${table} WHERE txEnd-txStart>10000 AND txEnd-txStart<19999 ORDER BY name2 LIMIT 100 OFFSET 300`;
   if (table === 'dbDb') {
     sql = `SELECT * FROM ${table}`;
   }
