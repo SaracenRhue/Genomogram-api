@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 
 
-const SERVER = 'https://genomogram-api-production.up.railway.app';
+const SERVER = 'http://localhost:3000';
 const GENOME = 'Human';
 const PATH = './';
 

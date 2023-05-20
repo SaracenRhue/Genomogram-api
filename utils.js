@@ -162,10 +162,21 @@ function cleanData(data) {
 }
 
 function sortData(data) {
-  // Sort data by exonCount
-  data.sort((a, b) => a.variants[0].exonCount - b.variants[0].exonCount);
+  // Sort data by the average exonCount of all variants
+  data.sort((a, b) => {
+    const avgExonCountA =
+      a.variants.reduce((acc, curr) => acc + curr.exonCount, 0) /
+      a.variants.length;
+    const avgExonCountB =
+      b.variants.reduce((acc, curr) => acc + curr.exonCount, 0) /
+      b.variants.length;
+
+    return avgExonCountA - avgExonCountB;
+  });
+
   return data;
 }
+
 
 function filterData(data) {
   // Filter genes so that all variants have a length between 10,000 and 19,999
@@ -207,7 +218,7 @@ async function getGenomeFile(GENOME) {
   console.log(`Time taken: ${Math.floor((endTime - startTime) / 1000)}s`);
 
   data = cleanData(data); // remove unneeded data
-  // data = sortData(data); // sort data by exon count
+  data = sortData(data); // sort data by exon count
   // data = filterData(data); // filter data by length
   // data.forEach((gene) => {
   //   gene.matrix = createMatrix(gene.variants);
