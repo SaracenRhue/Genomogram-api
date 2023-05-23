@@ -9,6 +9,7 @@ function connectToDB(db = 'hgcentral') {
     user: 'genome',
     database: db,
   });
+console.log(`Connected to database ${db}`);
 
   return connection;
 }
@@ -43,16 +44,25 @@ function toJSON(table, connection) {
 }
 
 function getTable(table, connection) {
-  // Get the data from a table
-  const sql = `SELECT * FROM ${table}`;
+  // Get the data from a table ordered by 'name2'
+  console.log(`Getting data from ${table}`);
+  let sql = `SELECT name, name2, txStart, txEnd, exonCount, exonStarts exonEnds FROM ${table} WHERE txEnd-txStart>10000 AND txEnd-txStart<19999 ORDER BY name2 LIMIT 100 OFFSET 300`;
+  if (table === 'dbDb') {
+    sql = `SELECT * FROM ${table}`;
+  }
+  
   return new Promise((resolve, reject) => {
     connection.query(sql, (error, results) => {
-      if (error) reject(error);
-      const data = results.map((result) => Object.assign({}, result));
-      resolve(data);
+      if (error) {
+        reject(error);
+      } else {
+        const data = results.map((result) => Object.assign({}, result));
+        resolve(data);
+      }
     });
   });
 }
+
 
 function findTablesFor(organism) {
   // Find a table for a specific genome e.g. "Human" in the current database
@@ -140,26 +150,33 @@ function cleanData(data) {
   // Remove unnecessary fields from the data
   for (var gene of data) {
     for (var variant of gene.variants) {
-      delete variant.bin;
-      delete variant.chrom;
-      delete variant.strand;
-      delete variant.cdsStart;
-      delete variant.cdsEnd;
-      delete variant.score;
-      delete variant.name2;
-      delete variant.cdsStartStat;
-      delete variant.cdsEndStat;
-      delete variant.exonFrames;
+      if (typeof variant.exonStarts === 'number') {
+        variant.exonStarts = [variant.exonStarts];
+      }
+      if (typeof variant.exonEnds === 'number') {
+        variant.exonEnds = [variant.exonEnds];
+      }
+      return data;
     }
   }
-  return data;
 }
 
 function sortData(data) {
-  // Sort data by exonCount
-  data.sort((a, b) => a.variants[0].exonCount - b.variants[0].exonCount);
+  // Sort data by the average exonCount of all variants
+  data.sort((a, b) => {
+    const avgExonCountA =
+      a.variants.reduce((acc, curr) => acc + curr.exonCount, 0) /
+      a.variants.length;
+    const avgExonCountB =
+      b.variants.reduce((acc, curr) => acc + curr.exonCount, 0) /
+      b.variants.length;
+
+    return avgExonCountA - avgExonCountB;
+  });
+
   return data;
 }
+
 
 function filterData(data) {
   // Filter genes so that all variants have a length between 10,000 and 19,999
@@ -202,34 +219,12 @@ async function getGenomeFile(GENOME) {
 
   data = cleanData(data); // remove unneeded data
   data = sortData(data); // sort data by exon count
-  data = filterData(data); // filter data by length
+  // data = filterData(data); // filter data by length
   // data.forEach((gene) => {
   //   gene.matrix = createMatrix(gene.variants);
   // });
   return data;
-} 
-
-
-function getFileAge(filePath) {
-  // Get the file stats
-  const stats = fs.statSync(filePath);
-
-  // Get the modification time
-  const modificationTime = stats.mtime;
-
-  // Calculate the age of the file in milliseconds
-  const ageInMillis = Date.now() - modificationTime.getTime();
-
-  // Convert the age to days and round down to an integer
-  const ageInDays = Math.floor(ageInMillis / (1000 * 60 * 60 * 24));
-
-  return ageInDays;
 }
-
-function fileExists(filePath) {
-  return fs.existsSync(filePath);
-}
-
 
 module.exports = {
   connectToDB,
@@ -242,6 +237,4 @@ module.exports = {
   cleanData,
   sortData,
   getGenomeFile,
-  getFileAge,
-  fileExists
 };
