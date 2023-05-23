@@ -64,7 +64,7 @@ function getTable(table, connection) {
 }
 
 
-function findTablesFor(organism) {
+function findTableFor(organism) {
   // Find a table for a specific genome e.g. "Human" in the current database
   const connection = connectToDB('hgcentral');
   return getTable('dbDb', connection)
@@ -79,7 +79,7 @@ function findTablesFor(organism) {
       console.log(
         `Found ${geneTables.length} tables for ${organism}: ${geneTables}`
       );
-      return geneTables;
+      return geneTables[0];
     })
     .finally(() => {
       connection.end();
@@ -231,7 +231,7 @@ module.exports = {
   getTableNames,
   toJSON,
   getTable,
-  findTablesFor,
+  findTableFor,
   formatGene,
   createMatrix,
   cleanData,
