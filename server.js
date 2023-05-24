@@ -4,6 +4,7 @@ const utils = require('./utils');
 
 const app = express();
 
+// http://localhost:3000/species
 app.get('/species', (req, res) => {
   const connection = utils.connectToDB();
   connection.query(
@@ -49,6 +50,7 @@ app.get('/species/:species/genes', (req, res) => {
   );
 });
 
+// http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
   const connection = utils.connectToDB(species);
