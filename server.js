@@ -7,9 +7,8 @@ const app = express();
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
-  const pageSize = req.query.pageSize
-    ? parseInt(req.query.pageSize)
-    : 100; // default page size is 'unlimited'
+  let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
+  pageSize = Math.min(pageSize, 100); // max page size is 100
   const offset = (page - 1) * pageSize;
 
   const connection = utils.connectToDB();
@@ -38,9 +37,8 @@ app.get('/species', (req, res) => {
 app.get('/species/:species/genes', (req, res) => {
   const { species } = req.params;
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
-  const pageSize = req.query.pageSize
-    ? parseInt(req.query.pageSize)
-    : 100; // default page size is unlimited
+  let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
+  pageSize = Math.min(pageSize, 100); // max page size is 100
   const offset = (page - 1) * pageSize;
 
   const connection = utils.connectToDB(species);
@@ -64,11 +62,9 @@ app.get('/species/:species/genes', (req, res) => {
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
-  const pageSize = req.query.pageSize
-    ? parseInt(req.query.pageSize)
-    : 100; // default page size is 'unlimited'
+  let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
+  pageSize = Math.min(pageSize, 100); // max page size is 100
   const offset = (page - 1) * pageSize;
-
   const connection = utils.connectToDB(species);
   connection.query(
     `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
@@ -96,5 +92,6 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   );
 });
 
-
 app.listen(3000);
+console.log('Server listening on port 3000');
+
