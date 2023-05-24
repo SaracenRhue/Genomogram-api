@@ -6,11 +6,11 @@ const utils = require('./utils');
 const app = express();
 
 app.get('/species', (req, res) => {
-  const connection = utils.connectToDB(db);
+  const connection = utils.connectToDB();
   connection.query(
     `
         SELECT 
-            a.name, a.genome
+            a.genome AS name, a.name AS db
         FROM
             hgcentral.dbDb AS a
                 JOIN
@@ -18,6 +18,7 @@ app.get('/species', (req, res) => {
         AND b.table_name = 'ncbiRefSeq';`,
     (err, result) => {
       connection.end();
+      console.log(err);
       res.json(result);
     }
   );
@@ -25,18 +26,12 @@ app.get('/species', (req, res) => {
 
 app.get('/species/:species/genes', (req, res) => {
   const { species } = req.params;
-  let db = utils.findTableFor(species);
-  console.log(db);
-  
-  // if (species === 'human') {
-  //   db = 'hg38';
-  // }
-  const connection = utils.connectToDB(db);
+  const connection = utils.connectToDB(species);
   connection.query(
-    `SELECT name2 AS gene, count(*) AS variantCount FROM ncbiRefSeq GROUP BY name2`,
+    `SELECT name2 AS name, count(*) AS variantCount FROM ncbiRefSeq GROUP BY name2`,
     (err, result) => {
       connection.end();
-
+      console.log(err);
       res.json(result);
     }
   );
@@ -44,13 +39,9 @@ app.get('/species/:species/genes', (req, res) => {
 
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
-    let db;
-    if (species === 'human') {
-      db = 'hg38';
-    }
-  const connection = utils.connectToDB(db);
+  const connection = utils.connectToDB(species);
   connection.query(
-    `SELECT * FROM ncbiRefSeq WHERE name2=?`,
+    `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds FROM ncbiRefSeq WHERE name2=?`,
     gene,
     (err, result) => {
       connection.end();
@@ -64,6 +55,7 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
         variant.exonStarts = map(variant.exonStarts);
         variant.exonEnds = map(variant.exonEnds);
       });
+      console.log(err);
       res.json(result);
     }
   );
