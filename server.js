@@ -6,6 +6,12 @@ const app = express();
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
+  const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
+  const pageSize = req.query.pageSize
+    ? parseInt(req.query.pageSize)
+    : Number.MAX_SAFE_INTEGER; // default page size is 'unlimited'
+  const offset = (page - 1) * pageSize;
+
   const connection = utils.connectToDB();
   connection.query(
     `
@@ -13,9 +19,11 @@ app.get('/species', (req, res) => {
             a.genome AS name, a.name AS db
         FROM
             hgcentral.dbDb AS a
-                JOIN
+            JOIN
             information_schema.tables AS b ON b.table_schema = a.name
-        AND b.table_name = 'ncbiRefSeq';`,
+        AND b.table_name = 'ncbiRefSeq'
+        LIMIT ?, ?;`,
+    [offset, pageSize],
     (err, result) => {
       connection.end();
       if (err) {
@@ -30,7 +38,9 @@ app.get('/species', (req, res) => {
 app.get('/species/:species/genes', (req, res) => {
   const { species } = req.params;
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
-  const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 10
+  const pageSize = req.query.pageSize
+    ? parseInt(req.query.pageSize)
+    : Number.MAX_SAFE_INTEGER; // default page size is unlimited
   const offset = (page - 1) * pageSize;
 
   const connection = utils.connectToDB(species);
@@ -53,10 +63,19 @@ app.get('/species/:species/genes', (req, res) => {
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
+  const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
+  const pageSize = req.query.pageSize
+    ? parseInt(req.query.pageSize)
+    : Number.MAX_SAFE_INTEGER; // default page size is 'unlimited'
+  const offset = (page - 1) * pageSize;
+
   const connection = utils.connectToDB(species);
   connection.query(
-    `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds FROM ncbiRefSeq WHERE name2=?`,
-    gene,
+    `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
+     FROM ncbiRefSeq 
+     WHERE name2=? 
+     LIMIT ?, ?`,
+    [gene, offset, pageSize],
     (err, result) => {
       connection.end();
       const map = (points) =>
@@ -76,5 +95,6 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
     }
   );
 });
+
 
 app.listen(3000);
