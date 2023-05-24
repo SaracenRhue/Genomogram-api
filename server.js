@@ -2,7 +2,6 @@ const express = require('express');
 const mysql = require('mysql');
 const utils = require('./utils');
 
-
 const app = express();
 
 app.get('/species', (req, res) => {
@@ -18,20 +17,33 @@ app.get('/species', (req, res) => {
         AND b.table_name = 'ncbiRefSeq';`,
     (err, result) => {
       connection.end();
-      console.log(err);
+      if (err) {
+        console.error(err);
+      }
       res.json(result);
     }
   );
 });
 
+// http://localhost:3000/species/hg38/genes?page=2&pageSize=20
 app.get('/species/:species/genes', (req, res) => {
   const { species } = req.params;
+  const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
+  const pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 10
+  const offset = (page - 1) * pageSize;
+
   const connection = utils.connectToDB(species);
   connection.query(
-    `SELECT name2 AS name, count(*) AS variantCount FROM ncbiRefSeq GROUP BY name2`,
+    `SELECT name2 AS name, count(*) AS variantCount 
+     FROM ncbiRefSeq 
+     GROUP BY name2 
+     LIMIT ?, ?`,
+    [offset, pageSize],
     (err, result) => {
       connection.end();
-      console.log(err);
+      if (err) {
+        console.error(err);
+      }
       res.json(result);
     }
   );
@@ -55,7 +67,9 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
         variant.exonStarts = map(variant.exonStarts);
         variant.exonEnds = map(variant.exonEnds);
       });
-      console.log(err);
+      if (err) {
+        console.error(err);
+      }
       res.json(result);
     }
   );
