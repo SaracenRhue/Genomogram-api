@@ -31,12 +31,12 @@ fetch(`http://localhost:3000/species/${db}/genes`)
     }
   });
 
-// fetch(`http://localhost:3000/species/${db}/genes/${gene}/variants`)
-//   .then((response) => {
-//     return response.json();
-//   })
-//   .then((json) => {
-//     variants = json;
-//   });
+fetch(`http://localhost:3000/species/${db}/genes/${gene}/variants`)
+  .then((response) => {
+    return response.json();
+  })
+  .then((json) => {
+    variants = json;
+  });
 
 console.log(variants);

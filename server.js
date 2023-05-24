@@ -1,8 +1,10 @@
 const express = require('express');
 const mysql = require('mysql');
+const cors = require('cors');
 const utils = require('./utils');
 
 const app = express();
+app.use(cors());
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
