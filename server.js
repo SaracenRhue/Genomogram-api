@@ -9,7 +9,7 @@ app.get('/species', (req, res) => {
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
   const pageSize = req.query.pageSize
     ? parseInt(req.query.pageSize)
-    : Number.MAX_SAFE_INTEGER; // default page size is 'unlimited'
+    : 100; // default page size is 'unlimited'
   const offset = (page - 1) * pageSize;
 
   const connection = utils.connectToDB();
@@ -40,7 +40,7 @@ app.get('/species/:species/genes', (req, res) => {
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
   const pageSize = req.query.pageSize
     ? parseInt(req.query.pageSize)
-    : Number.MAX_SAFE_INTEGER; // default page size is unlimited
+    : 100; // default page size is unlimited
   const offset = (page - 1) * pageSize;
 
   const connection = utils.connectToDB(species);
@@ -66,7 +66,7 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
   const pageSize = req.query.pageSize
     ? parseInt(req.query.pageSize)
-    : Number.MAX_SAFE_INTEGER; // default page size is 'unlimited'
+    : 100; // default page size is 'unlimited'
   const offset = (page - 1) * pageSize;
 
   const connection = utils.connectToDB(species);
