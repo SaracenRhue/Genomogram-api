@@ -1,13 +1,12 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const cors = require('cors');
+const mysql = require('mysql');
+const disk = require('diskusage');
 const express = require('express');
 const morgan = require('morgan');
-const fs = require('fs');
-const path = require('path');
 const rateLimit = require('express-rate-limit');
-const mysql = require('mysql');
-const cors = require('cors');
-const os = require('os');
-const disk = require('diskusage');
-const { execSync } = require('child_process');
 const logFile = path.join(__dirname, 'access.log');
 
 const app = express();
@@ -92,7 +91,6 @@ function formatUptime(seconds) {
     secs
   )} Seconds`;
 }
-
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
@@ -252,7 +250,6 @@ app.get('/log', (req, res) => {
     res.sendStatus(500);
   }
 });
-
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();
