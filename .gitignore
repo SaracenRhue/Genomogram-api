@@ -4,3 +4,4 @@ data/
 cache/
 tests.js
 samples.json
+*.log

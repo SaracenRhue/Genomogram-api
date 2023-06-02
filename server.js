@@ -1,10 +1,53 @@
 const express = require('express');
+const morgan = require('morgan');
+const fs = require('fs');
+const path = require('path');
 const mysql = require('mysql');
 const cors = require('cors');
 const utils = require('./utils');
+const logFile = path.join(__dirname, 'access.log');
 
 const app = express();
+app.set('trust proxy', true); // if behind a proxy like Nginx, set true
 app.use(cors());
+
+var accessLogStream = fs.createWriteStream(logFile, { flags: 'a' });
+app.use(
+  morgan(
+    (tokens, req, res) =>
+      [
+        tokens.method(req, res),
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'),
+        '-',
+        tokens['response-time'](req, res),
+        'ms',
+        req.ip, // logging IP address
+      ].join(' '),
+    { stream: accessLogStream }
+  )
+);
+
+// Rotating logs
+function truncateLog(maxLines) {
+  fs.readFile(logFile, 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    let lines = data.split('\n');
+    if (lines.length > maxLines) {
+      lines = lines.slice(lines.length - maxLines);
+      fs.writeFile(logFile, lines.join('\n'), 'utf8', (err) => {
+        if (err) console.error(err);
+      });
+    }
+  });
+}
+
+setInterval(() => truncateLog(5000), 24 * 60 * 60 * 1000); // Keeps last 5000 lines and runs every 24 hours
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
@@ -102,7 +145,6 @@ app.get('/species/:species/genes', (req, res) => {
   });
 });
 
-
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
@@ -156,7 +198,15 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   });
 });
 
+app.get('/log', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
+    res.send(data);
+  } catch (e) {
+    console.error(e);
+    res.sendStatus(500);
+  }
+});
 
 app.listen(3000);
 console.log('Server listening on port 3000');
-

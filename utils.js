@@ -9,7 +9,6 @@ function connectToDB(db = 'hgcentral') {
     user: 'genome',
     database: db,
   });
-console.log(`Connected to database ${db}`);
 
   return connection;
 }
