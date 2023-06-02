@@ -1,5 +1,4 @@
 const mysql = require('mysql');
-const fs = require('fs');
 
 function connectToDB(db = 'hgcentral') {
   // Connect to the MySQL server and return a connection object
