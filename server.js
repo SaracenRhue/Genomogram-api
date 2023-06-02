@@ -130,7 +130,7 @@ app.get('/species/:species/genes', (req, res) => {
   if (nameFilter || variantCountFilter) {
     sqlQuery += ` WHERE `;
     if (nameFilter && variantCountFilter) {
-      sqlQuery += `name = ? AND variantCount >= ?`;
+      sqlQuery += `name = ? AND variantCount = ?`;
       sqlParams.push(nameFilter, variantCountFilter);
     } else if (nameFilter) {
       sqlQuery += `name = ?`;
