@@ -2,5 +2,6 @@
 node_modules
 data/
 cache/
+tests.js
 samples.json
-tests.*
+*.log
