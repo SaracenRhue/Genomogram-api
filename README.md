@@ -1,6 +1,6 @@
 # Genomegram API
 
-Express Genomegram API is a RESTful API built with Node.js and Express, providing access to genomic species and gene data.
+Express Genomegram API is a RESTful API built with Node.js and Express, providing access to the USCS Genome Browser data.
 
 ## Features
 
