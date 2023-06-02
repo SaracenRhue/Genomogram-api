@@ -136,7 +136,7 @@ app.get('/species/:species/genes', (req, res) => {
       sqlQuery += `name = ?`;
       sqlParams.push(nameFilter);
     } else if (variantCountFilter) {
-      sqlQuery += `variantCount >= ?`;
+      sqlQuery += `variantCount = ?`;
       sqlParams.push(variantCountFilter);
     }
   }
@@ -179,7 +179,7 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
       sqlParams.push(nameFilter);
     }
     if (exonCountFilter) {
-      sqlQuery += ` AND exonCount >= ?`;
+      sqlQuery += ` AND exonCount = ?`;
       sqlParams.push(exonCountFilter);
     }
   }
