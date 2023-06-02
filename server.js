@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const mysql = require('mysql');
@@ -215,6 +216,28 @@ app.get('/log', (req, res) => {
     console.error(e);
     res.sendStatus(500);
   }
+});
+
+app.get('/health', (req, res) => {
+  const memoryUsage = process.memoryUsage();
+
+  // convert from bytes to megabytes
+  const rssInMB = (memoryUsage.rss / 1024 / 1024).toFixed(2);
+  const heapTotalInMB = (memoryUsage.heapTotal / 1024 / 1024).toFixed(2);
+  const heapUsedInMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
+  const externalInMB = (memoryUsage.external / 1024 / 1024).toFixed(2);
+
+  const healthInfo = {
+    status: 'OK',
+    memoryUsage: {
+      rss: rssInMB + ' MB',
+      heapTotal: heapTotalInMB + ' MB',
+      heapUsed: heapUsedInMB + ' MB',
+      external: externalInMB + ' MB',
+    },
+  };
+
+  res.status(200).send(healthInfo);
 });
 
 app.listen(3000);
