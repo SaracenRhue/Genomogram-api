@@ -11,6 +11,12 @@ Express Genomegram API is a RESTful API built with Node.js and Express, providin
 - CORS enabled.
 - Logging and rotating logs.
 
+## Installation
+
+```bash
+docker run -p 3000:3000 saracenrhue/genomogram-api
+```
+
 ## Usage
 
 All endpoints return a JSON object. Here are the available endpoints:
