@@ -2,6 +2,7 @@ const express = require('express');
 const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const mysql = require('mysql');
 const cors = require('cors');
 const utils = require('./utils');
@@ -29,6 +30,14 @@ app.use(
   )
 );
 
+// Set up rate limiter: maximum of 1000 requests per minute per IP
+var limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000,
+});
+
+// Apply the rate limit to all requests
+app.use(limiter);
 // Rotating logs
 function truncateLog(maxLines) {
   fs.readFile(logFile, 'utf8', (err, data) => {
