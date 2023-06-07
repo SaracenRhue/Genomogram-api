@@ -92,6 +92,14 @@ function formatUptime(seconds) {
   )} Seconds`;
 }
 
+
+app.get('/', (req, res) => {res.json(
+  [
+    'hello world'
+  ]
+);});
+
+
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
