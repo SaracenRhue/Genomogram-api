@@ -3,7 +3,6 @@ const os = require('os');
 const path = require('path');
 const cors = require('cors');
 const mysql = require('mysql');
-const disk = require('diskusage');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
@@ -92,13 +91,9 @@ function formatUptime(seconds) {
   )} Seconds`;
 }
 
-
-app.get('/', (req, res) => {res.json(
-  [
-    'hello world'
-  ]
-);});
-
+app.get('/', (req, res) => {
+  res.json(['hello world']);
+});
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
@@ -210,7 +205,6 @@ app.get('/species/:species/genes', (req, res) => {
   });
 });
 
-
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
@@ -282,10 +276,6 @@ app.get('/health', async (req, res) => {
 
   const loadAverage = os.loadavg();
 
-  const { free: freeDisk, total: totalDisk } = await disk.check('/');
-  const usedDisk = totalDisk - freeDisk;
-  const diskUsageInPercentage = ((usedDisk / totalDisk) * 100).toFixed(2);
-
   const uptime = formatUptime(process.uptime());
 
   const connection = connectToDB();
@@ -305,25 +295,12 @@ app.get('/health', async (req, res) => {
       usedMemory: formatBytes(usedMemory),
       memoryUsage: memoryUsageInPercentage + '%',
       loadAverage,
-      freeDisk: formatBytes(freeDisk),
-      totalDisk: formatBytes(totalDisk),
-      usedDisk: formatBytes(usedDisk),
-      diskUsage: diskUsageInPercentage + '%',
       uptime,
       dbStatus,
     };
 
     res.status(200).send(healthInfo);
   });
-});
-
-///////////////// user data /////////////////
-
-app.get('/getUserData', (req, res) => {
-
-});
-
-app.post('/setUserData', (req, res) => {
 });
 
 app.listen(3000);
