@@ -91,13 +91,9 @@ function formatUptime(seconds) {
   )} Seconds`;
 }
 
-
-app.get('/', (req, res) => {res.json(
-  [
-    'hello world'
-  ]
-);});
-
+app.get('/', (req, res) => {
+  res.json(['hello world']);
+});
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
@@ -209,7 +205,6 @@ app.get('/species/:species/genes', (req, res) => {
   });
 });
 
-
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
@@ -308,6 +303,11 @@ app.get('/health', async (req, res) => {
   });
 });
 
+///// user data /////
+
+app.get('/getUsers', (req, res) => {});
+
+app.post('/setUser', (req, res) => {});
 
 app.listen(3000);
 console.log('Server listening on port 3000');
