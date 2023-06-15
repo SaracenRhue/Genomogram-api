@@ -211,7 +211,6 @@ app.get('/species/:species/genes', (req, res) => {
 });
 
 
-
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
   const { species, gene } = req.params;
