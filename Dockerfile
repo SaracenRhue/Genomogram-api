@@ -1,10 +1,10 @@
-FROM node:current-alpine3.16
+FROM node:alpine
 
 WORKDIR /home/app
 
 COPY . .
 
-RUN apk update && apk upgrade && apk add npm && npm install
+RUN npm install
 
 ENV PORT=3000
 EXPOSE 3000
