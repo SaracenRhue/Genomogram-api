@@ -1,7 +1,5 @@
 .DS_Store
 node_modules
-data/
-cache/
 tests.js
 samples.json
 *.log
