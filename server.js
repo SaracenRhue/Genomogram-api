@@ -69,7 +69,7 @@ function truncateLog(maxLines) {
   });
 }
 
-setInterval(() => truncateLog(5000), 24 * 60 * 60 * 1000); // Keeps last 5000 lines and runs every 24 hours
+setInterval(() => truncateLog(500), 24 * 60 * 60 * 1000); // Keeps last 500 lines and runs every 24 hours
 
 function formatBytes(bytes) {
   if (bytes < 1024) return bytes.toFixed(3) + ' Bytes';
@@ -157,8 +157,14 @@ app.get('/species/:species/genes', (req, res) => {
   const offset = (page - 1) * pageSize;
 
   const nameFilter = req.query.name ? req.query.name : null;
-  const variantCountFilter = req.query.variantCount
-    ? parseInt(req.query.variantCount)
+  const minVariantCountFilter = req.query.minVariantCount
+    ? parseInt(req.query.minVariantCount)
+    : null;
+  const maxVariantCountFilter = req.query.maxVariantCount
+    ? parseInt(req.query.maxVariantCount)
+    : null;
+  const exonCountFilter = req.query.exonCount
+    ? parseInt(req.query.exonCount)
     : null;
 
   let sqlQuery = `SELECT * FROM (
@@ -169,18 +175,26 @@ app.get('/species/:species/genes', (req, res) => {
 
   let sqlParams = [];
 
-  if (nameFilter || variantCountFilter) {
-    sqlQuery += ` WHERE `;
-    if (nameFilter && variantCountFilter) {
-      sqlQuery += `name = ? AND variantCount = ?`;
-      sqlParams.push(nameFilter, variantCountFilter);
-    } else if (nameFilter) {
-      sqlQuery += `name = ?`;
-      sqlParams.push(nameFilter);
-    } else if (variantCountFilter) {
-      sqlQuery += `variantCount = ?`;
-      sqlParams.push(variantCountFilter);
-    }
+  let conditions = [];
+  if (nameFilter) {
+    conditions.push(`name = ?`);
+    sqlParams.push(nameFilter);
+  }
+  if (minVariantCountFilter) {
+    conditions.push(`variantCount >= ?`);
+    sqlParams.push(minVariantCountFilter);
+  }
+  if (maxVariantCountFilter) {
+    conditions.push(`variantCount <= ?`);
+    sqlParams.push(maxVariantCountFilter);
+  }
+  if (exonCountFilter) {
+    conditions.push(`exonCount = ?`);
+    sqlParams.push(exonCountFilter);
+  }
+
+  if (conditions.length) {
+    sqlQuery += ` WHERE ${conditions.join(' AND ')}`;
   }
 
   sqlQuery += ` LIMIT ?, ?;`;
@@ -195,6 +209,8 @@ app.get('/species/:species/genes', (req, res) => {
     res.json(result);
   });
 });
+
+
 
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
@@ -249,15 +265,15 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   });
 });
 
-app.get('/log', (req, res) => {
-  try {
-    const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
-    res.send(data);
-  } catch (e) {
-    console.error(e);
-    res.sendStatus(500);
-  }
-});
+// app.get('/log', (req, res) => {
+//   try {
+//     const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
+//     res.send(data);
+//   } catch (e) {
+//     console.error(e);
+//     res.sendStatus(500);
+//   }
+// });
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();

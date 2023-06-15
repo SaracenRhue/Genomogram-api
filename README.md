@@ -44,6 +44,8 @@ All endpoints return a JSON object. Here are the available endpoints:
 - `name`: filter the results by the name of the species, gene, or variant.
 - `db`: filter the species by database name.
 - `variantCount`: filter the genes by the count of variants.
+- `minVariantCount`: filter the genes by the minimum count of variants.
+- `maxVariantCount`: filter the genes by the maximum count of variants.
 - `exonCount`: filter the variants by exon count.
 - `page`: the page number for pagination (default is 1).
 - `pageSize`: the number of results per page (default is 100 and max is 100).
