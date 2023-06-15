@@ -3,7 +3,6 @@ const os = require('os');
 const path = require('path');
 const cors = require('cors');
 const mysql = require('mysql');
-const disk = require('diskusage');
 const express = require('express');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
@@ -282,10 +281,6 @@ app.get('/health', async (req, res) => {
 
   const loadAverage = os.loadavg();
 
-  const { free: freeDisk, total: totalDisk } = await disk.check('/');
-  const usedDisk = totalDisk - freeDisk;
-  const diskUsageInPercentage = ((usedDisk / totalDisk) * 100).toFixed(2);
-
   const uptime = formatUptime(process.uptime());
 
   const connection = connectToDB();
@@ -305,10 +300,6 @@ app.get('/health', async (req, res) => {
       usedMemory: formatBytes(usedMemory),
       memoryUsage: memoryUsageInPercentage + '%',
       loadAverage,
-      freeDisk: formatBytes(freeDisk),
-      totalDisk: formatBytes(totalDisk),
-      usedDisk: formatBytes(usedDisk),
-      diskUsage: diskUsageInPercentage + '%',
       uptime,
       dbStatus,
     };
@@ -316,6 +307,7 @@ app.get('/health', async (req, res) => {
     res.status(200).send(healthInfo);
   });
 });
+
 
 app.listen(3000);
 console.log('Server listening on port 3000');
