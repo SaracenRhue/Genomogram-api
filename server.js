@@ -318,5 +318,14 @@ app.get('/health', async (req, res) => {
   });
 });
 
+///////////////// user data /////////////////
+
+app.get('/getUserData', (req, res) => {
+
+});
+
+app.post('/setUserData', (req, res) => {
+});
+
 app.listen(3000);
 console.log('Server listening on port 3000');
