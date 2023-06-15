@@ -1,11 +1,12 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const cors = require('cors');
+const mysql = require('mysql');
+const disk = require('diskusage');
 const express = require('express');
 const morgan = require('morgan');
-const fs = require('fs');
-const path = require('path');
 const rateLimit = require('express-rate-limit');
-const mysql = require('mysql');
-const cors = require('cors');
-const utils = require('./utils');
 const logFile = path.join(__dirname, 'access.log');
 
 const app = express();
@@ -38,6 +39,18 @@ var limiter = rateLimit({
 
 // Apply the rate limit to all requests
 app.use(limiter);
+
+function connectToDB(db = 'hgcentral') {
+  // Connect to the MySQL server and return a connection object
+  const connection = mysql.createConnection({
+    host: 'genome-euro-mysql.soe.ucsc.edu',
+    port: 3306,
+    user: 'genome',
+    database: db,
+  });
+
+  return connection;
+}
 // Rotating logs
 function truncateLog(maxLines) {
   fs.readFile(logFile, 'utf8', (err, data) => {
@@ -56,7 +69,36 @@ function truncateLog(maxLines) {
   });
 }
 
-setInterval(() => truncateLog(5000), 24 * 60 * 60 * 1000); // Keeps last 5000 lines and runs every 24 hours
+setInterval(() => truncateLog(500), 24 * 60 * 60 * 1000); // Keeps last 500 lines and runs every 24 hours
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes.toFixed(3) + ' Bytes';
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(3) + ' KB';
+  else if (bytes < 1073741824) return (bytes / 1048576).toFixed(3) + ' MB';
+  return (bytes / 1073741824).toFixed(3) + ' GB';
+}
+
+function formatUptime(seconds) {
+  function pad(s) {
+    return (s < 10 ? '0' : '') + s;
+  }
+  const days = Math.floor(seconds / (24 * 60 * 60));
+  const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+  const minutes = Math.floor((seconds % (60 * 60)) / 60);
+  const secs = Math.floor(seconds % 60);
+
+  return `${pad(days)} Days ${pad(hours)} Hours ${pad(minutes)} Minutes ${pad(
+    secs
+  )} Seconds`;
+}
+
+
+app.get('/', (req, res) => {res.json(
+  [
+    'hello world'
+  ]
+);});
+
 
 // http://localhost:3000/species
 app.get('/species', (req, res) => {
@@ -96,7 +138,7 @@ app.get('/species', (req, res) => {
   sqlQuery += ` LIMIT ?, ?;`;
   sqlParams.push(offset, pageSize);
 
-  const connection = utils.connectToDB();
+  const connection = connectToDB();
   connection.query(sqlQuery, sqlParams, (err, result) => {
     connection.end();
     if (err) {
@@ -115,8 +157,14 @@ app.get('/species/:species/genes', (req, res) => {
   const offset = (page - 1) * pageSize;
 
   const nameFilter = req.query.name ? req.query.name : null;
-  const variantCountFilter = req.query.variantCount
-    ? parseInt(req.query.variantCount)
+  const minVariantCountFilter = req.query.minVariantCount
+    ? parseInt(req.query.minVariantCount)
+    : null;
+  const maxVariantCountFilter = req.query.maxVariantCount
+    ? parseInt(req.query.maxVariantCount)
+    : null;
+  const exonCountFilter = req.query.exonCount
+    ? parseInt(req.query.exonCount)
     : null;
 
   let sqlQuery = `SELECT * FROM (
@@ -127,24 +175,32 @@ app.get('/species/:species/genes', (req, res) => {
 
   let sqlParams = [];
 
-  if (nameFilter || variantCountFilter) {
-    sqlQuery += ` WHERE `;
-    if (nameFilter && variantCountFilter) {
-      sqlQuery += `name = ? AND variantCount = ?`;
-      sqlParams.push(nameFilter, variantCountFilter);
-    } else if (nameFilter) {
-      sqlQuery += `name = ?`;
-      sqlParams.push(nameFilter);
-    } else if (variantCountFilter) {
-      sqlQuery += `variantCount = ?`;
-      sqlParams.push(variantCountFilter);
-    }
+  let conditions = [];
+  if (nameFilter) {
+    conditions.push(`name = ?`);
+    sqlParams.push(nameFilter);
+  }
+  if (minVariantCountFilter) {
+    conditions.push(`variantCount >= ?`);
+    sqlParams.push(minVariantCountFilter);
+  }
+  if (maxVariantCountFilter) {
+    conditions.push(`variantCount <= ?`);
+    sqlParams.push(maxVariantCountFilter);
+  }
+  if (exonCountFilter) {
+    conditions.push(`exonCount = ?`);
+    sqlParams.push(exonCountFilter);
+  }
+
+  if (conditions.length) {
+    sqlQuery += ` WHERE ${conditions.join(' AND ')}`;
   }
 
   sqlQuery += ` LIMIT ?, ?;`;
   sqlParams.push(offset, pageSize);
 
-  const connection = utils.connectToDB(species);
+  const connection = connectToDB(species);
   connection.query(sqlQuery, sqlParams, (err, result) => {
     connection.end();
     if (err) {
@@ -153,6 +209,7 @@ app.get('/species/:species/genes', (req, res) => {
     res.json(result);
   });
 });
+
 
 // http://localhost:3000/species/hg38/genes/ACMSD/variants
 app.get('/species/:species/genes/:gene/variants', (req, res) => {
@@ -187,7 +244,7 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   sqlQuery += ` LIMIT ?, ?`;
   sqlParams.push(offset, pageSize);
 
-  const connection = utils.connectToDB(species);
+  const connection = connectToDB(species);
   connection.query(sqlQuery, sqlParams, (err, result) => {
     connection.end();
     const map = (points) =>
@@ -207,14 +264,57 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   });
 });
 
-app.get('/log', (req, res) => {
-  try {
-    const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
-    res.send(data);
-  } catch (e) {
-    console.error(e);
-    res.sendStatus(500);
-  }
+// app.get('/log', (req, res) => {
+//   try {
+//     const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
+//     res.send(data);
+//   } catch (e) {
+//     console.error(e);
+//     res.sendStatus(500);
+//   }
+// });
+
+app.get('/health', async (req, res) => {
+  const freeMemory = os.freemem();
+  const totalMemory = os.totalmem();
+  const usedMemory = totalMemory - freeMemory;
+  const memoryUsageInPercentage = ((usedMemory / totalMemory) * 100).toFixed(2);
+
+  const loadAverage = os.loadavg();
+
+  const { free: freeDisk, total: totalDisk } = await disk.check('/');
+  const usedDisk = totalDisk - freeDisk;
+  const diskUsageInPercentage = ((usedDisk / totalDisk) * 100).toFixed(2);
+
+  const uptime = formatUptime(process.uptime());
+
+  const connection = connectToDB();
+  let dbStatus = 'OK';
+  connection.ping((err) => {
+    if (err) {
+      console.error('Cannot connect to the database:', err);
+      dbStatus = 'Unavailable';
+    }
+
+    connection.end();
+
+    const healthInfo = {
+      status: 'OK',
+      freeMemory: formatBytes(freeMemory),
+      totalMemory: formatBytes(totalMemory),
+      usedMemory: formatBytes(usedMemory),
+      memoryUsage: memoryUsageInPercentage + '%',
+      loadAverage,
+      freeDisk: formatBytes(freeDisk),
+      totalDisk: formatBytes(totalDisk),
+      usedDisk: formatBytes(usedDisk),
+      diskUsage: diskUsageInPercentage + '%',
+      uptime,
+      dbStatus,
+    };
+
+    res.status(200).send(healthInfo);
+  });
 });
 
 app.listen(3000);
