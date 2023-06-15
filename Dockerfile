@@ -4,7 +4,7 @@ WORKDIR /home/app
 
 COPY . .
 
-RUN npm install
+RUN apk update && apk upgrade && apk add npm && npm install
 
 ENV PORT=3000
 EXPOSE 3000
