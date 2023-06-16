@@ -261,15 +261,15 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   });
 });
 
-// app.get('/log', (req, res) => {
-//   try {
-//     const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
-//     res.send(data);
-//   } catch (e) {
-//     console.error(e);
-//     res.sendStatus(500);
-//   }
-// });
+app.get('/log', (req, res) => {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
+    res.send(data);
+  } catch (e) {
+    console.error(e);
+    res.sendStatus(500);
+  }
+});
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();
@@ -311,8 +311,8 @@ app.get('/health', async (req, res) => {
 const uri = 'mongodb://192.168.178.132:27017';
 const client = new MongoClient(uri);
 
-
-app.get('/getUsers', async (req, res) => {
+// http://localhost:3000/getUsers?sortByPoints
+app.get('/getUser', async (req, res) => {
   try {
     await client.connect();
     const database = client.db('admin');
@@ -352,30 +352,99 @@ app.get('/getUsers', async (req, res) => {
   }
 });
 
-
-
-
-
-app.post('/setUsers', async (req, res) => {
+// http://localhost:3000/createUser?name=newUser
+app.get('/createUser', async (req, res) => {
   try {
-    const newUser = req.body;
-
     await client.connect();
     const database = client.db('admin');
     const users = database.collection('users');
 
-    // Insert new user
-    const result = await users.insertOne(newUser);
-    console.log(`New user created with the following id: ${result.insertedId}`);
+    // Create a unique index on the 'name' field
+    await users.createIndex({ name: 1 }, { unique: true });
 
-    res.json({ message: 'User created successfully', id: result.insertedId });
+    let newData = {
+      name: req.query.name,
+      points: 0,
+    };
+
+    const result = await users.insertOne(newData);
+
+    if (result.insertedCount > 0) {
+      res.json({ _id: result.insertedId, ...newData });
+    } else {
+      res.status(500).json({ message: 'Error occurred while creating user' });
+    }
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error occurred while creating user');
+    // If there's a duplicate key error, return a custom message
+    if (err.code === 11000) {
+      res.status(400).json({ message: 'A user with this name already exists' });
+    } else {
+      console.error(err);
+      res.status(500).send('Error occurred while creating user');
+    }
   } finally {
     await client.close();
   }
 });
+
+// http://localhost:3000/editUser?id=userId&name=newName&points=6
+app.get('/editUser', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('admin');
+    const users = database.collection('users');
+
+    let updateData = {};
+
+    if (req.query.name) {
+      updateData.name = req.query.name;
+    }
+
+    if (req.query.points) {
+      updateData.points = req.query.points;
+    }
+
+    const result = await users.findOneAndUpdate(
+      { _id: new ObjectId(req.query.id) },
+      { $set: updateData },
+      { returnDocument: 'after' } // Returns the updated document
+    );
+
+    if (result.value) {
+      res.json(result.value);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error occurred while updating user');
+  } finally {
+    await client.close();
+  }
+});
+
+// http://localhost:3000/deleteUser?id=648c8b8181e2a7d4e7bb1e7f
+app.get('/deleteUser', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('admin');
+    const users = database.collection('users');
+
+    const result = await users.deleteOne({ _id: new ObjectId(req.query.id) });
+
+    if (result.deletedCount > 0) {
+      res.json({ message: 'User deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error occurred while deleting user');
+  } finally {
+    await client.close();
+  }
+});
+
 
 
 app.listen(3000);
