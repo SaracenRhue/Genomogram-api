@@ -3,35 +3,10 @@ const os = require('os');
 const path = require('path');
 const cors = require('cors');
 const mysql = require('mysql');
-const express = require('express');
 const morgan = require('morgan');
+const express = require('express');
 const rateLimit = require('express-rate-limit');
 const logFile = path.join(__dirname, 'access.log');
-const sqlite3 = require('sqlite3').verbose();
-
-// Initialize database
-function initializeDb() {
-  const db = new sqlite3.Database('./userdata.db', sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-    if (err) {
-      console.error(err);
-    }
-  });
-
-  db.run(`CREATE TABLE IF NOT EXISTS Users (
-    id INTEGER PRIMARY KEY,
-    name TEXT,
-    points INTEGER
-  )`, [], (err) => {
-    if (err) {
-      console.error(err);
-    }
-  });
-
-  db.close();
-}
-
-// Initialize database on server start
-initializeDb();
 
 
 const app = express();
@@ -331,67 +306,9 @@ app.get('/health', async (req, res) => {
 
 ///// user data /////
 
-app.get('/getUsers', (req, res) => {
-  const db = new sqlite3.Database(
-    './userdata.db',
-    sqlite3.OPEN_READONLY,
-    (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send(err);
-      }
-    }
-  );
+app.get('/getUsers', (req, res) => {});
 
-  db.serialize(() => {
-    db.all('SELECT * FROM Users', [], (err, rows) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send(err);
-      }
-
-      res.status(200).json(rows);
-    });
-  });
-
-  db.close();
-});
-
-app.post('/setUser', (req, res) => {
-  const { name, age } = req.body;
-
-  if (!name || !age) {
-    return res.status(400).send({ error: 'Missing required fields' });
-  }
-
-  const db = new sqlite3.Database(
-    './userdata.db',
-    sqlite3.OPEN_READWRITE,
-    (err) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send(err);
-      }
-    }
-  );
-
-  db.serialize(() => {
-    db.run(
-      `INSERT INTO Users (name, age) VALUES (?, ?)`,
-      [name, age],
-      (err) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).send(err);
-        }
-
-        res.status(201).send({ status: 'User added' });
-      }
-    );
-  });
-
-  db.close();
-});
+app.post('/setUser', (req, res) => {});
 
 app.listen(3000);
 console.log('Server listening on port 3000');

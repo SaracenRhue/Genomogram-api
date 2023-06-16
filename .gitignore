@@ -3,4 +3,3 @@ node_modules
 tests.js
 samples.json
 *.log
-*.db
