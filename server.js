@@ -7,6 +7,8 @@ const morgan = require('morgan');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const logFile = path.join(__dirname, 'access.log');
+const { MongoClient, ObjectId } = require('mongodb');
+
 
 
 const app = express();
@@ -306,9 +308,75 @@ app.get('/health', async (req, res) => {
 
 ///// user data /////
 
-app.get('/getUsers', (req, res) => {});
+const uri = 'mongodb://192.168.178.132:27017';
+const client = new MongoClient(uri);
 
-app.post('/setUser', (req, res) => {});
+
+app.get('/getUsers', async (req, res) => {
+  try {
+    await client.connect();
+    const database = client.db('admin');
+    const users = database.collection('users');
+
+    let query = {};
+    let sort = {};
+
+    if (req.query.id) {
+      query._id = new ObjectId(req.query.id);
+    }
+
+    if (req.query.name) {
+      query.name = req.query.name;
+    }
+
+    if (req.query.sortByPoints) {
+      sort.points = req.query.sortByPoints === 'asc' ? 1 : -1;
+    } else {
+      sort.points = 1; // default sort order is ascending
+    }
+
+    let options = {
+      limit: 100,
+      skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 100,
+      sort: sort,
+    };
+
+    const allUsers = await users.find(query, options).toArray();
+
+    res.json(allUsers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error occurred while getting users');
+  } finally {
+    await client.close();
+  }
+});
+
+
+
+
+
+app.post('/setUsers', async (req, res) => {
+  try {
+    const newUser = req.body;
+
+    await client.connect();
+    const database = client.db('admin');
+    const users = database.collection('users');
+
+    // Insert new user
+    const result = await users.insertOne(newUser);
+    console.log(`New user created with the following id: ${result.insertedId}`);
+
+    res.json({ message: 'User created successfully', id: result.insertedId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error occurred while creating user');
+  } finally {
+    await client.close();
+  }
+});
+
 
 app.listen(3000);
 console.log('Server listening on port 3000');
