@@ -1,17 +1,17 @@
 const { MongoClient } = require('mongodb');
 
-const dbAdress = 'mongodb://192.168.178.132:27017';
+const uri = 'mongodb+srv://genomogram:6mwpnrpSBJ7Z9wmM@genomogram.bnmp3cf.mongodb.net/?retryWrites=true&w=majority';
 
 async function main() {
 
-    const client = new MongoClient(dbAdress);
+    const client = new MongoClient(uri);
 
   try {
     // Connect to the MongoDB cluster
     await client.connect();
 
     // Select the "admin" database
-    const database = client.db('admin');
+    const database = client.db('Genomogram');
 
     // Create a new collection called "users"
     const users = database.collection('users');

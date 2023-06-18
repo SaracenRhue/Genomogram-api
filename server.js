@@ -5,6 +5,7 @@ const cors = require('cors');
 const mysql = require('mysql');
 const morgan = require('morgan');
 const express = require('express');
+const dotenv = require('dotenv').config();
 const rateLimit = require('express-rate-limit');
 const logFile = path.join(__dirname, 'access.log');
 const { MongoClient, ObjectId } = require('mongodb');
@@ -308,14 +309,13 @@ app.get('/health', async (req, res) => {
 
 ///// user data /////
 
-const uri = 'mongodb://192.168.178.132:27017';
-const client = new MongoClient(uri);
+const client = new MongoClient(process.env.MONGO_URI);
 
 // http://localhost:3000/getUsers?sortByPoints
 app.get('/getUser', async (req, res) => {
   try {
     await client.connect();
-    const database = client.db('admin');
+    const database = client.db('Genomogram');
     const users = database.collection('users');
 
     let query = {};
@@ -356,7 +356,7 @@ app.get('/getUser', async (req, res) => {
 app.get('/createUser', async (req, res) => {
   try {
     await client.connect();
-    const database = client.db('admin');
+    const database = client.db('Genomogram');
     const users = database.collection('users');
 
     // Create a unique index on the 'name' field
@@ -365,6 +365,8 @@ app.get('/createUser', async (req, res) => {
     let newData = {
       name: req.query.name,
       points: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const result = await users.insertOne(newData);
@@ -391,7 +393,7 @@ app.get('/createUser', async (req, res) => {
 app.get('/editUser', async (req, res) => {
   try {
     await client.connect();
-    const database = client.db('admin');
+    const database = client.db('Genomogram');
     const users = database.collection('users');
 
     let updateData = {};
@@ -403,6 +405,8 @@ app.get('/editUser', async (req, res) => {
     if (req.query.points) {
       updateData.points = req.query.points;
     }
+
+    updateData.updatedAt = new Date();
 
     const result = await users.findOneAndUpdate(
       { _id: new ObjectId(req.query.id) },
@@ -427,7 +431,7 @@ app.get('/editUser', async (req, res) => {
 app.get('/deleteUser', async (req, res) => {
   try {
     await client.connect();
-    const database = client.db('admin');
+    const database = client.db('Genomogram');
     const users = database.collection('users');
 
     const result = await users.deleteOne({ _id: new ObjectId(req.query.id) });
@@ -444,7 +448,6 @@ app.get('/deleteUser', async (req, res) => {
     await client.close();
   }
 });
-
 
 
 app.listen(3000);
