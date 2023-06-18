@@ -9,12 +9,13 @@ const dotenv = require('dotenv').config();
 const rateLimit = require('express-rate-limit');
 const logFile = path.join(__dirname, 'access.log');
 const { MongoClient, ObjectId } = require('mongodb');
-
+const bodyParser = require('body-parser');
 
 
 const app = express();
 app.set('trust proxy', true); // if behind a proxy like Nginx, set true
 app.use(cors());
+app.use(bodyParser.json());
 
 var accessLogStream = fs.createWriteStream(logFile, { flags: 'a' });
 app.use(
@@ -354,7 +355,7 @@ app.get('/getUser', async (req, res) => {
 });
 
 // http://localhost:3000/createUser?name=newUser
-app.get('/createUser', async (req, res) => {
+app.post('/createUser', async (req, res) => {
   try {
     await client.connect();
     const database = client.db('Genomogram');
@@ -364,7 +365,8 @@ app.get('/createUser', async (req, res) => {
     await users.createIndex({ name: 1 }, { unique: true });
 
     let newData = {
-      name: req.query.name,
+      name: req.body.name,
+      uuid: req.body.uuid,
       points: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
