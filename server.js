@@ -33,6 +33,7 @@ app.use(
     { stream: accessLogStream }
   )
 );
+app.use(morgan('dev'));
 
 // Set up rate limiter: maximum of 1000 requests per minute per IP
 var limiter = rateLimit({
@@ -262,15 +263,15 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
   });
 });
 
-app.get('/log', (req, res) => {
-  try {
-    const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
-    res.send(data);
-  } catch (e) {
-    console.error(e);
-    res.sendStatus(500);
-  }
-});
+// app.get('/log', (req, res) => {
+//   try {
+//     const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
+//     res.send(data);
+//   } catch (e) {
+//     console.error(e);
+//     res.sendStatus(500);
+//   }
+// });
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();
