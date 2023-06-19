@@ -154,7 +154,7 @@ app.get('/species/:species/genes', (req, res) => {
   const { species } = req.params;
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
   let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
-  pageSize = Math.min(pageSize, 100); // max page size is 100
+  // pageSize = Math.min(pageSize, 100); // max page size is 100
   const offset = (page - 1) * pageSize;
 
   const nameFilter = req.query.name ? req.query.name : null;
@@ -314,7 +314,7 @@ app.get('/health', async (req, res) => {
 const client = new MongoClient(process.env.MONGO_URI);
 
 // http://localhost:3000/getUsers?sortByPoints
-app.get('/getUser', async (req, res) => {
+app.get('/users', async (req, res) => {
   try {
     await client.connect();
     const database = client.db('Genomogram');
@@ -341,6 +341,7 @@ app.get('/getUser', async (req, res) => {
       limit: 100,
       skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 100,
       sort: sort,
+      projection: { uuid: 0 }
     };
 
     const allUsers = await users.find(query, options).toArray();
@@ -355,73 +356,59 @@ app.get('/getUser', async (req, res) => {
 });
 
 // http://localhost:3000/createUser?name=newUser
-app.post('/createUser', async (req, res) => {
-  try {
-    await client.connect();
-    const database = client.db('Genomogram');
-    const users = database.collection('users');
+// app.post('/createUser', async (req, res) => {
+//   try {
+//     await client.connect();
+//     const database = client.db('Genomogram');
+//     const users = database.collection('users');
 
-    // Create a unique index on the 'name' field
-    await users.createIndex({ name: 1 }, { unique: true });
 
-    let newData = {
-      name: req.body.name,
-      uuid: req.body.uuid,
-      points: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+//     let newData = {
+//       name: req.body.name,
+//       uuid: req.body.uuid,
+//       points: 0,
+//       createdAt: new Date(),
+//       updatedAt: new Date(),
+//     };
 
-    const result = await users.insertOne(newData);
+//     const result = await users.insertOne(newData);
 
-    if (result.insertedCount > 0) {
-      res.json({ _id: result.insertedId, ...newData });
-    } else {
-      res.status(500).json({ message: 'Error occurred while creating user' });
-    }
-  } catch (err) {
-    // If there's a duplicate key error, return a custom message
-    if (err.code === 11000) {
-      res.status(400).json({ message: 'A user with this name already exists' });
-    } else {
-      console.error(err);
-      res.status(500).send('Error occurred while creating user');
-    }
-  } finally {
-    await client.close();
-  }
-});
+//     console.log(result);
+//     if (result.insertedCount > 0) {
+//       res.json({ _id: result.insertedId, ...newData });
+//     } else {
+//       res.status(500).json({ message: 'Error occurred while creating user' });
+//     }
+//   } catch (err) {
+//     // If there's a duplicate key error, return a custom message
+//     if (err.code === 11000) {
+//       res.status(409).json({ message: 'A user with this name already exists' });
+//     } else {
+//       console.error(err);
+//       res.status(500).send('Error occurred while creating user');
+//     }
+//   } finally {
+//     await client.close();
+//   }
+// });
 
 // http://localhost:3000/editUser?id=userId&name=newName&points=6
-app.get('/editUser', async (req, res) => {
+app.put('/users', async (req, res) => {
   try {
     await client.connect();
     const database = client.db('Genomogram');
     const users = database.collection('users');
+    const { name, uuid, points, createdAt } = req.body;
+    
+    let updateData = { name, uuid, points, createdAt, updatedAt: new Date() };
 
-    let updateData = {};
-
-    if (req.query.name) {
-      updateData.name = req.query.name;
-    }
-
-    if (req.query.points) {
-      updateData.points = req.query.points;
-    }
-
-    updateData.updatedAt = new Date();
-
-    const result = await users.findOneAndUpdate(
-      { _id: new ObjectId(req.query.id) },
-      { $set: updateData },
-      { returnDocument: 'after' } // Returns the updated document
+    const result = await users.replaceOne(
+      { uuid },
+      updateData ,
+      { upsert: true }
     );
-
-    if (result.value) {
-      res.json(result.value);
-    } else {
-      res.status(404).json({ message: 'User not found' });
-    }
+      console.log(result);
+      
   } catch (err) {
     console.error(err);
     res.status(500).send('Error occurred while updating user');
@@ -431,13 +418,13 @@ app.get('/editUser', async (req, res) => {
 });
 
 // http://localhost:3000/deleteUser?id=648c8b8181e2a7d4e7bb1e7f
-app.get('/deleteUser', async (req, res) => {
+app.delete('/users/:uuid', async (req, res) => {
   try {
     await client.connect();
     const database = client.db('Genomogram');
     const users = database.collection('users');
 
-    const result = await users.deleteOne({ _id: new ObjectId(req.query.id) });
+    const result = await users.deleteOne({ uuid: req.params.uuid });
 
     if (result.deletedCount > 0) {
       res.json({ message: 'User deleted successfully' });
