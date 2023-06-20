@@ -27,17 +27,16 @@ All endpoints return a JSON object. Here are the available endpoints:
   
   This endpoint retrieves species data. You can filter the results by providing `name` or `db` as query parameters. The `page` and `pageSize` parameters control the pagination, and by default, it returns the first 100 species.
 
-- Get a list of genes for a specific species:
+- Get a list of genes for a specific species (:species == db e.g. hg38):
   - `GET http://localhost:3000/species/:species/genes`
   - Optional query parameters: `name`, `variantCount`, `page`, `pageSize`
   
   This endpoint retrieves genes of the specified species. The results can be filtered by `name` or `variantCount`. Use the `page` and `pageSize` parameters to control the pagination. By default, it returns the first 100 genes.
 
-- Get a list of variants for a specific gene in a species:
-  - `GET http://localhost:3000/species/:species/genes/:gene/variants`
-  - Optional query parameters: `name`, `exonCount`, `page`, `pageSize`
-  
-  This endpoint retrieves variants of a specific gene in a species. You can filter the results by `name` or `exonCount`. The `page` and `pageSize` parameters control the pagination. By default, it returns the first 100 variants.
+- Get all the information for a specific gene in a species:
+  - `GET http://localhost:3000/species/:species/genes/:gene`
+
+  This endpoint retrieves all the information for a specific gene in a species (db, species, name, variants).
 
 ### Query Parameters
 
@@ -61,3 +60,5 @@ The API is configured with rate limiting for all requests to prevent abuse. Curr
 ## Log Access
 
 Logs are accessible via the `/log` endpoint and are kept for the last 5000 lines.
+
+

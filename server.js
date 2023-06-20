@@ -374,7 +374,7 @@ app.get('/health', async (req, res) => {
 
 const client = new MongoClient(process.env.MONGO_URI);
 
-// http://localhost:3000/getUsers?sortByPoints
+// http://localhost:3000/getUsers?sortByPoints=asc
 app.get('/users', async (req, res) => {
   try {
     await client.connect();
