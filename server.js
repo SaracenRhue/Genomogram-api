@@ -11,7 +11,6 @@ const logFile = path.join(__dirname, 'access.log');
 const { MongoClient, ObjectId } = require('mongodb');
 const bodyParser = require('body-parser');
 
-
 const app = express();
 app.set('trust proxy', true); // if behind a proxy like Nginx, set true
 app.use(cors());
@@ -211,38 +210,67 @@ app.get('/species/:species/genes', (req, res) => {
   });
 });
 
-// http://localhost:3000/species/hg38/genes/ACMSD/variants
-app.get('/species/:species/genes/:gene/variants', (req, res) => {
+// // http://localhost:3000/species/hg38/genes/ACMSD/variants
+// app.get('/species/:species/genes/:gene/variants', (req, res) => {
+//   const { species, gene } = req.params;
+//   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
+//   let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
+//   pageSize = Math.min(pageSize, 100); // max page size is 100
+//   const offset = (page - 1) * pageSize;
+
+//   const nameFilter = req.query.name ? req.query.name : null;
+//   const exonCountFilter = req.query.exonCount
+//     ? parseInt(req.query.exonCount)
+//     : null;
+
+//   let sqlQuery = `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
+//                   FROM ncbiRefSeq 
+//                   WHERE name2=?`;
+
+//   let sqlParams = [gene];
+
+//   if (nameFilter || exonCountFilter) {
+//     if (nameFilter) {
+//       sqlQuery += ` AND name = ?`;
+//       sqlParams.push(nameFilter);
+//     }
+//     if (exonCountFilter) {
+//       sqlQuery += ` AND exonCount = ?`;
+//       sqlParams.push(exonCountFilter);
+//     }
+//   }
+
+//   sqlQuery += ` LIMIT ?, ?`;
+//   sqlParams.push(offset, pageSize);
+
+//   const connection = connectToDB(species);
+//   connection.query(sqlQuery, sqlParams, (err, result) => {
+//     connection.end();
+//     const map = (points) =>
+//       points
+//         .toString()
+//         .split(',')
+//         .map((string) => parseInt(string))
+//         .filter((int) => !isNaN(int));
+//     result.forEach((variant) => {
+//       variant.exonStarts = map(variant.exonStarts);
+//       variant.exonEnds = map(variant.exonEnds);
+//     });
+//     if (err) {
+//       console.error(err);
+//     }
+//     res.json(result);
+//   });
+// });
+
+app.get('/species/:species/genes/:gene', (req, res) => {
   const { species, gene } = req.params;
-  const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
-  let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
-  pageSize = Math.min(pageSize, 100); // max page size is 100
-  const offset = (page - 1) * pageSize;
 
-  const nameFilter = req.query.name ? req.query.name : null;
-  const exonCountFilter = req.query.exonCount
-    ? parseInt(req.query.exonCount)
-    : null;
+  const sqlQuery = `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
+                    FROM ncbiRefSeq 
+                    WHERE name2=?`;
 
-  let sqlQuery = `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
-                  FROM ncbiRefSeq 
-                  WHERE name2=?`;
-
-  let sqlParams = [gene];
-
-  if (nameFilter || exonCountFilter) {
-    if (nameFilter) {
-      sqlQuery += ` AND name = ?`;
-      sqlParams.push(nameFilter);
-    }
-    if (exonCountFilter) {
-      sqlQuery += ` AND exonCount = ?`;
-      sqlParams.push(exonCountFilter);
-    }
-  }
-
-  sqlQuery += ` LIMIT ?, ?`;
-  sqlParams.push(offset, pageSize);
+  const sqlParams = [gene];
 
   const connection = connectToDB(species);
   connection.query(sqlQuery, sqlParams, (err, result) => {
@@ -257,12 +285,18 @@ app.get('/species/:species/genes/:gene/variants', (req, res) => {
       variant.exonStarts = map(variant.exonStarts);
       variant.exonEnds = map(variant.exonEnds);
     });
+    result = {
+      db: species,
+      name: gene,
+      variants: result,
+    };
     if (err) {
       console.error(err);
     }
     res.json(result);
   });
 });
+
 
 // app.get('/log', (req, res) => {
 //   try {
@@ -341,7 +375,7 @@ app.get('/users', async (req, res) => {
       limit: 100,
       skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 100,
       sort: sort,
-      projection: { uuid: 0 }
+      projection: { uuid: 0 },
     };
 
     const allUsers = await users.find(query, options).toArray();
@@ -361,7 +395,6 @@ app.get('/users', async (req, res) => {
 //     await client.connect();
 //     const database = client.db('Genomogram');
 //     const users = database.collection('users');
-
 
 //     let newData = {
 //       name: req.body.name,
@@ -399,16 +432,13 @@ app.put('/users', async (req, res) => {
     const database = client.db('Genomogram');
     const users = database.collection('users');
     const { name, uuid, points, createdAt } = req.body;
-    
+
     let updateData = { name, uuid, points, createdAt, updatedAt: new Date() };
 
-    const result = await users.replaceOne(
-      { uuid },
-      updateData ,
-      { upsert: true }
-    );
-      console.log(result);
-      
+    const result = await users.replaceOne({ uuid }, updateData, {
+      upsert: true,
+    });
+    console.log(result);
   } catch (err) {
     console.error(err);
     res.status(500).send('Error occurred while updating user');
@@ -438,7 +468,6 @@ app.delete('/users/:uuid', async (req, res) => {
     await client.close();
   }
 });
-
 
 app.listen(3000);
 console.log('Server listening on port 3000');
