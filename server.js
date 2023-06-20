@@ -263,37 +263,64 @@ app.get('/species/:species/genes', (req, res) => {
 //   });
 // });
 
+// http://localhost:3000/species/hg38/genes/ACMSD
 app.get('/species/:species/genes/:gene', (req, res) => {
   const { species, gene } = req.params;
 
-  const sqlQuery = `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
-                    FROM ncbiRefSeq 
-                    WHERE name2=?`;
+  let sqlQuery = `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
+                  FROM ncbiRefSeq 
+                  WHERE name2=?`;
 
   const sqlParams = [gene];
 
   const connection = connectToDB(species);
   connection.query(sqlQuery, sqlParams, (err, result) => {
-    connection.end();
+    if (err) {
+      console.error(err);
+      connection.end();
+      return res.status(500).json({ error: err.toString() });
+    }
+
     const map = (points) =>
       points
         .toString()
         .split(',')
         .map((string) => parseInt(string))
         .filter((int) => !isNaN(int));
+
     result.forEach((variant) => {
       variant.exonStarts = map(variant.exonStarts);
       variant.exonEnds = map(variant.exonEnds);
     });
-    result = {
+
+    let data = {
       db: species,
+      species: 'unknown',
       name: gene,
       variants: result,
     };
-    if (err) {
-      console.error(err);
-    }
-    res.json(result);
+
+    let sqlQuery2 = `
+      SELECT 
+          a.genome AS name, a.name AS db
+      FROM
+          hgcentral.dbDb AS a
+          JOIN
+          information_schema.tables AS b ON b.table_schema = a.name
+      AND b.table_name = 'ncbiRefSeq' WHERE a.name = ?`;
+
+    const connection2 = connectToDB();
+    connection2.query(sqlQuery2, [species], (err2, result2) => {
+      connection2.end();
+      if (err2) {
+        console.error(err2);
+        return res.status(500).json({ error: err2.toString() });
+      }
+
+      data.species = result2[0].name;
+
+      res.json(data);
+    });
   });
 });
 
