@@ -33,7 +33,7 @@ app.use(
     { stream: accessLogStream }
   )
 );
-app.use(morgan('dev'));
+app.use(morgan('dev')); // log requests to the console
 
 // Set up rate limiter: maximum of 1000 requests per minute per IP
 var limiter = rateLimit({
@@ -242,60 +242,6 @@ app.get('/species/:species/genes', (req, res) => {
   });
 });
 
-
-// // http://localhost:3000/species/hg38/genes/ACMSD/variants
-// app.get('/species/:species/genes/:gene/variants', (req, res) => {
-//   const { species, gene } = req.params;
-//   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
-//   let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
-//   pageSize = Math.min(pageSize, 100); // max page size is 100
-//   const offset = (page - 1) * pageSize;
-
-//   const nameFilter = req.query.name ? req.query.name : null;
-//   const exonCountFilter = req.query.exonCount
-//     ? parseInt(req.query.exonCount)
-//     : null;
-
-//   let sqlQuery = `SELECT name, txStart, txEnd, exonCount, exonStarts, exonEnds 
-//                   FROM ncbiRefSeq 
-//                   WHERE name2=?`;
-
-//   let sqlParams = [gene];
-
-//   if (nameFilter || exonCountFilter) {
-//     if (nameFilter) {
-//       sqlQuery += ` AND name = ?`;
-//       sqlParams.push(nameFilter);
-//     }
-//     if (exonCountFilter) {
-//       sqlQuery += ` AND exonCount = ?`;
-//       sqlParams.push(exonCountFilter);
-//     }
-//   }
-
-//   sqlQuery += ` LIMIT ?, ?`;
-//   sqlParams.push(offset, pageSize);
-
-//   const connection = connectToDB(species);
-//   connection.query(sqlQuery, sqlParams, (err, result) => {
-//     connection.end();
-//     const map = (points) =>
-//       points
-//         .toString()
-//         .split(',')
-//         .map((string) => parseInt(string))
-//         .filter((int) => !isNaN(int));
-//     result.forEach((variant) => {
-//       variant.exonStarts = map(variant.exonStarts);
-//       variant.exonEnds = map(variant.exonEnds);
-//     });
-//     if (err) {
-//       console.error(err);
-//     }
-//     res.json(result);
-//   });
-// });
-
 // http://localhost:3000/species/hg38/genes/ACMSD
 app.get('/species/:species/genes/:gene', (req, res) => {
   const { species, gene } = req.params;
@@ -356,17 +302,6 @@ app.get('/species/:species/genes/:gene', (req, res) => {
     });
   });
 });
-
-
-// app.get('/log', (req, res) => {
-//   try {
-//     const data = fs.readFileSync(path.join(__dirname, 'access.log'), 'utf8');
-//     res.send(data);
-//   } catch (e) {
-//     console.error(e);
-//     res.sendStatus(500);
-//   }
-// });
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();
@@ -448,42 +383,6 @@ app.get('/users', async (req, res) => {
     await client.close();
   }
 });
-
-// http://localhost:3000/createUser?name=newUser
-// app.post('/createUser', async (req, res) => {
-//   try {
-//     await client.connect();
-//     const database = client.db('Genomogram');
-//     const users = database.collection('users');
-
-//     let newData = {
-//       name: req.body.name,
-//       uuid: req.body.uuid,
-//       points: 0,
-//       createdAt: new Date(),
-//       updatedAt: new Date(),
-//     };
-
-//     const result = await users.insertOne(newData);
-
-//     console.log(result);
-//     if (result.insertedCount > 0) {
-//       res.json({ _id: result.insertedId, ...newData });
-//     } else {
-//       res.status(500).json({ message: 'Error occurred while creating user' });
-//     }
-//   } catch (err) {
-//     // If there's a duplicate key error, return a custom message
-//     if (err.code === 11000) {
-//       res.status(409).json({ message: 'A user with this name already exists' });
-//     } else {
-//       console.error(err);
-//       res.status(500).send('Error occurred while creating user');
-//     }
-//   } finally {
-//     await client.close();
-//   }
-// });
 
 // http://localhost:3000/editUser?id=userId&name=newName&points=6
 app.put('/users', async (req, res) => {
