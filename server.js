@@ -153,10 +153,12 @@ app.get('/species/:species/genes', (req, res) => {
   const { species } = req.params;
   const page = req.query.page ? parseInt(req.query.page) : 1; // default page is 1
   let pageSize = req.query.pageSize ? parseInt(req.query.pageSize) : 100; // default page size is 100
-  // pageSize = Math.min(pageSize, 100); // max page size is 100
   const offset = (page - 1) * pageSize;
 
   const nameFilter = req.query.name ? req.query.name : null;
+  const nameStartsWithFilter = req.query.nameStartsWith
+    ? req.query.nameStartsWith
+    : null;
   const minVariantCountFilter = req.query.minVariantCount
     ? parseInt(req.query.minVariantCount)
     : null;
@@ -179,6 +181,10 @@ app.get('/species/:species/genes', (req, res) => {
   if (nameFilter) {
     conditions.push(`name = ?`);
     sqlParams.push(nameFilter);
+  }
+  if (nameStartsWithFilter) {
+    conditions.push(`name LIKE ?`);
+    sqlParams.push(nameStartsWithFilter + '%');
   }
   if (minVariantCountFilter) {
     conditions.push(`variantCount >= ?`);
