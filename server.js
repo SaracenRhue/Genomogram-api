@@ -177,7 +177,7 @@ app.get('/species/:species/genes', (req, res) => {
 
   let conditions = [];
   if (nameFilter) {
-    conditions.push(`name = ?`);
+    conditions.push(`name like ?`);
     sqlParams.push(nameFilter);
   }
   if (minVariantCountFilter) {
