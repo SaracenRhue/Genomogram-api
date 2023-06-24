@@ -175,9 +175,15 @@ app.get('/species/:species/genes', (req, res) => {
     GROUP BY name2
   ) AS subQuery`;
 
-  let sqlParams = [];
+  let countSqlQuery = `SELECT COUNT(*) as totalCount FROM (
+    SELECT name2 AS name, count(*) AS variantCount 
+    FROM ncbiRefSeq 
+    GROUP BY name2
+  ) AS subQuery`;
 
+  let sqlParams = [];
   let conditions = [];
+
   if (nameFilter) {
     conditions.push(`name = ?`);
     sqlParams.push(nameFilter);
@@ -201,20 +207,41 @@ app.get('/species/:species/genes', (req, res) => {
 
   if (conditions.length) {
     sqlQuery += ` WHERE ${conditions.join(' AND ')}`;
+    countSqlQuery += ` WHERE ${conditions.join(' AND ')}`;
   }
 
   sqlQuery += ` LIMIT ?, ?;`;
   sqlParams.push(offset, pageSize);
 
   const connection = connectToDB(species);
-  connection.query(sqlQuery, sqlParams, (err, result) => {
-    connection.end();
+  connection.query(countSqlQuery, sqlParams, (err, countResult) => {
     if (err) {
       console.error(err);
+      connection.end();
+      res.status(500).json({ error: 'Error counting total results' });
+      return;
     }
-    res.json(result);
+
+    connection.query(sqlQuery, sqlParams, (err, result) => {
+      connection.end();
+      if (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error retrieving results' });
+        return;
+      }
+
+      const totalResults = countResult[0].totalCount;
+      const totalPages = Math.ceil(totalResults / pageSize);
+
+      res.json({
+        totalResults: totalResults,
+        totalPages: totalPages,
+        results: result,
+      });
+    });
   });
 });
+
 
 // // http://localhost:3000/species/hg38/genes/ACMSD/variants
 // app.get('/species/:species/genes/:gene/variants', (req, res) => {
