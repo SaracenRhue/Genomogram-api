@@ -97,7 +97,7 @@ function formatUptime(seconds) {
 }
 
 app.get('/', (req, res) => {
-  res.json(['hello world']);
+  res.json(['Working']);
 });
 
 // http://localhost:3000/species
