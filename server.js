@@ -390,9 +390,9 @@ app.put('/users', async (req, res) => {
     await client.connect();
     const database = client.db('Genomogram');
     const users = database.collection('users');
-    const { name, uuid, points, createdAt } = req.body;
+    const { name, uuid, points, playedLevels, createdAt } = req.body;
 
-    let updateData = { name, uuid, points, createdAt, updatedAt: new Date() };
+    let updateData = { name, uuid, points, playedLevels, createdAt: new Date(createdAt), updatedAt: new Date() };
 
     const result = await users.replaceOne({ uuid }, updateData, {
       upsert: true,
