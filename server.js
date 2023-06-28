@@ -97,7 +97,14 @@ function formatUptime(seconds) {
 }
 
 app.get('/', (req, res) => {
-  res.json(['Working']);
+  res.json({
+    message: 'Welcome to the UCSC Genome Browser REST API!',
+    uptime: formatUptime(os.uptime()),
+    species: '/species',
+    genes: '/species/hg38/genes',
+    gene: '/species/hg38/genes/NAPA',
+    users: '/users',
+  });
 });
 
 // http://localhost:3000/species
