@@ -374,10 +374,13 @@ app.get('/users', async (req, res) => {
     }
 
     let options = {
-      limit: 100,
-      skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 100,
+      limit: 10, 
+      skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 10, 
       sort: sort,
-      projection: { uuid: 0 },
+      projection: {
+        uuid: 0,
+        playedLevels: 0,
+      },
     };
 
     const allUsers = await users.find(query, options).toArray();
@@ -390,6 +393,7 @@ app.get('/users', async (req, res) => {
     await client.close();
   }
 });
+
 
 // http://localhost:3000/editUser?id=userId&name=newName&points=6
 app.put('/users', async (req, res) => {
