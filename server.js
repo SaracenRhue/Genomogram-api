@@ -394,6 +394,34 @@ app.get('/users', async (req, res) => {
   }
 });
 
+app.get('/users/:uuid', async (req, res) => {
+  const { uuid } = req.params;
+
+  try {
+    await client.connect();
+    const database = client.db('Genomogram');
+    const users = database.collection('users');
+
+    const query = {
+      uuid: uuid,
+    };
+
+    const user = await users.findOne(query);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error occurred while getting user');
+  } finally {
+    await client.close();
+  }
+});
+
+
 
 // http://localhost:3000/editUser?id=userId&name=newName&points=6
 app.put('/users', async (req, res) => {
