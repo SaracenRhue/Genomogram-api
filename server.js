@@ -283,6 +283,7 @@ app.get('/species/:species/genes/:gene', (req, res) => {
       db: species,
       species: 'unknown',
       name: gene,
+      fullName: gene,
       variants: result,
     };
 
@@ -295,9 +296,7 @@ app.get('/species/:species/genes/:gene', (req, res) => {
           information_schema.tables AS b ON b.table_schema = a.name
       AND b.table_name = 'ncbiRefSeq' WHERE a.name = ?`;
 
-    const connection2 = connectToDB();
-    connection2.query(sqlQuery2, [species], (err2, result2) => {
-      connection2.end();
+    connection.query(sqlQuery2, [species], (err2, result2) => {
       if (err2) {
         console.error(err2);
         return res.status(500).json({ error: err2.toString() });
@@ -305,10 +304,28 @@ app.get('/species/:species/genes/:gene', (req, res) => {
 
       data.species = result2[0].name;
 
-      res.json(data);
+      let sqlQuery3 = `SELECT kgID FROM kgXref WHERE geneSymbol = ?`;
+
+      connection.query(sqlQuery3, [gene], (err3, result3) => {
+        connection.end();
+        if (err3) {
+          console.error(err3);
+          return res.status(500).json({ error: err3.toString() });
+        }
+
+        // Adding kgID of the gene to the data
+        if (result3 && result3.length > 0) {
+          data.fullName = result3[0].kgID;
+        } else {
+          data.kgID = 'kgID not found';
+        }
+
+        res.json(data);
+      });
     });
   });
 });
+
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();
