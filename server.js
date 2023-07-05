@@ -299,6 +299,7 @@ app.get('/species/:species/genes/:gene', (req, res) => {
     connection.query(sqlQuery2, [species], (err2, result2) => {
       if (err2) {
         console.error(err2);
+        connection.end();
         return res.status(500).json({ error: err2.toString() });
       }
 
@@ -307,25 +308,32 @@ app.get('/species/:species/genes/:gene', (req, res) => {
       let sqlQuery3 = `SELECT kgID FROM kgXref WHERE geneSymbol = ?`;
 
       connection.query(sqlQuery3, [gene], (err3, result3) => {
+        // End the connection after query
         connection.end();
+
+        // Handle errors and unknown kgID separately
         if (err3) {
-          console.error(err3);
-          return res.status(500).json({ error: err3.toString() });
+          // If kgID is not found or there is an error, proceed without it.
+          if (
+            err3.code !== 'ER_NO_SUCH_TABLE' &&
+            err3.code !== 'ER_BAD_FIELD_ERROR'
+          ) {
+            console.error(err3);
+            return res.status(500).json({ error: err3.toString() });
+          }
         }
 
-        // Adding kgID of the gene to the data
+        // If result3 exists and has data, add it to the response
         if (result3 && result3.length > 0) {
           data.fullName = result3[0].kgID;
-        } else {
-          data.kgID = 'kgID not found';
         }
 
+        // Respond with the data
         res.json(data);
       });
     });
   });
 });
-
 
 app.get('/health', async (req, res) => {
   const freeMemory = os.freemem();
@@ -391,8 +399,8 @@ app.get('/users', async (req, res) => {
     }
 
     let options = {
-      limit: 10, 
-      skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 10, 
+      limit: 10,
+      skip: (req.query.page ? Number(req.query.page) - 1 : 0) * 10,
       sort: sort,
       projection: {
         uuid: 0,
@@ -438,8 +446,6 @@ app.get('/users/:uuid', async (req, res) => {
   }
 });
 
-
-
 // http://localhost:3000/editUser?id=userId&name=newName&points=6
 app.put('/users', async (req, res) => {
   try {
@@ -448,7 +454,14 @@ app.put('/users', async (req, res) => {
     const users = database.collection('users');
     const { name, uuid, points, playedLevels, createdAt } = req.body;
 
-    let updateData = { name, uuid, points, playedLevels, createdAt: new Date(createdAt), updatedAt: new Date() };
+    let updateData = {
+      name,
+      uuid,
+      points,
+      playedLevels,
+      createdAt: new Date(createdAt),
+      updatedAt: new Date(),
+    };
 
     const result = await users.replaceOne({ uuid }, updateData, {
       upsert: true,
