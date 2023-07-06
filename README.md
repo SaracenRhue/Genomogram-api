@@ -109,21 +109,15 @@ Updates an existing user in the 'users' collection in the 'Genomogram' database.
   - **Code:** 200
   - **Content:** A summary of the update operation, including the number of users updated.
 
-#### 3. DELETE /users/:uuid
+#### 3. GET /users/:uuid Restore user information
 
-Deletes a user from the 'users' collection in the 'Genomogram' database.
+Restores a user from the 'users' collection in the 'Genomogram' database.
 
 - **URL:** <http://localhost:3000/users/:uuid>
-- **Method:** DELETE
+- **Method:** GET
 - **URL Params:**
   - Required:
-    - `uuid=[string]`: The unique id of the user to be deleted.
-- **Success Response:**
-  - **Code:** 200
-  - **Content:** `{ message: 'User deleted successfully' }`
-- **Error Response:**
-  - **Code:** 404
-  - **Content:** `{ message: 'User not found' }`
+    - `uuid=[string]`: The unique id of the user to be restored.
 
 ## Rate Limiting
 
